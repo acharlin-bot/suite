@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NUMEN Suite · Administra tu empresa</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#161a23; --panel2:#1c212d; --line:#262c3a;
+    --ink:#e8ecf4; --mut:#96a0b5; --acc:#7c5cff; --acc2:#22d3ee;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    --card:#ffffff; --cardink:#111827; --cardmut:#6b7280; --cardline:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  a{color:inherit}
+  .app{display:flex;min-height:100vh}
+  /* Sidebar */
+  .side{width:240px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{padding:20px 18px;border-bottom:1px solid var(--line)}
+  .brand b{font-size:18px;letter-spacing:.5px}
+  .brand .tag{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+  .nav{padding:10px;flex:1}
+  .nav button{width:100%;text-align:left;background:none;border:0;color:var(--mut);padding:11px 12px;border-radius:10px;font-size:14px;cursor:pointer;display:flex;gap:10px;align-items:center;margin-bottom:2px}
+  .nav button:hover{background:var(--panel2);color:var(--ink)}
+  .nav button.on{background:linear-gradient(90deg,rgba(124,92,255,.18),rgba(34,211,238,.10));color:#fff;box-shadow:inset 2px 0 0 var(--acc)}
+  .nav .ico{width:18px;text-align:center}
+  .side .foot{padding:14px;border-top:1px solid var(--line);font-size:11px;color:var(--mut)}
+  /* Main */
+  .main{flex:1;min-width:0}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+  .top h1{font-size:18px;margin:0}
+  .top .sub{color:var(--mut);font-size:12px;margin-top:2px}
+  .wrap{padding:24px;max-width:1200px}
+  /* Buttons */
+  .btn{background:var(--acc);color:#fff;border:0;padding:10px 15px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+  .btn.ok{background:var(--ok)} .btn.bad{background:var(--bad)} .btn.warn{background:var(--warn);color:#111}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .spacer{flex:1}
+  /* KPI cards */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .kpi .lbl{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .kpi .val{font-size:26px;font-weight:700;margin-top:6px}
+  .kpi .val small{font-size:13px;color:var(--mut);font-weight:500}
+  /* Tables */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2)}
+  tbody tr:hover{background:var(--panel2)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .pill.ok{background:rgba(34,197,94,.15);color:#4ade80}
+  .pill.warn{background:rgba(245,158,11,.15);color:#fbbf24}
+  .pill.bad{background:rgba(239,68,68,.15);color:#f87171}
+  .pill.mut{background:var(--panel2);color:var(--mut)}
+  /* Inputs */
+  input,select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:9px;font-size:14px;font-family:inherit;width:100%}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:0}
+  label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+  .field{margin-bottom:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .search{max-width:260px}
+  .empty{padding:40px;text-align:center;color:var(--mut)}
+  /* Modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:20;overflow:auto}
+  .modal.on{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:640px;padding:22px}
+  .sheet h3{margin:0 0 16px}
+  .mini{color:var(--mut);font-size:12px}
+  /* Quote/preview */
+  .doc{background:#fff;color:#111827;border-radius:12px;padding:28px;font-size:13px}
+  .doc h2{margin:0 0 2px}
+  .doc table{font-size:12px}
+  .doc th,.doc td{border-bottom:1px solid var(--cardline);color:#111827;background:none}
+  .doc th{color:#6b7280}
+  .tot{display:flex;justify-content:space-between;padding:4px 0}
+  .tot.big{font-weight:800;font-size:16px;border-top:2px solid #111;margin-top:6px;padding-top:8px}
+  .lineitem{display:grid;grid-template-columns:1fr 90px 120px 120px 34px;gap:8px;align-items:center;margin-bottom:8px}
+  .hide{display:none!important}
+  @media(max-width:820px){.side{width:64px}.brand b,.brand .tag,.nav button span.t,.side .foot{display:none}.nav button{justify-content:center}.grid2{grid-template-columns:1fr}}
+  @media print{.side,.top,.noprint{display:none!important}.wrap{padding:0}.doc{border:0}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><b>NUMEN</b> <span class="tag">Suite · gestión de empresa</span></div>
+    <nav class="nav" id="nav">
+      <button data-v="panel" class="on"><span class="ico">▤</span><span class="t">Panel</span></button>
+      <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
+      <button data-v="cotizaciones"><span class="ico">◈</span><span class="t">Cotizaciones</span></button>
+      <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
+      <button data-v="cobranzas"><span class="ico">◱</span><span class="t">Cobranzas</span></button>
+      <button data-v="config"><span class="ico">⚙</span><span class="t">Mi empresa</span></button>
+    </nav>
+    <div class="foot">Datos guardados en este equipo.<br>Sin cuentas · sin costo.</div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div><h1 id="ttl">Panel</h1><div class="sub" id="sub">Resumen de tu empresa</div></div>
+      <div class="row noprint" id="topActions"></div>
+    </div>
+    <div class="wrap" id="view"></div>
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ---------- almacén ---------- */
+const KEY='numen_suite_v1';
+const DB=load();
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.v)return r;}catch(e){}return seed();}
+function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function seed(){
+  const c1=uid(),c2=uid(),c3=uid();
+  return {v:1,
+    empresa:{nombre:'Mi Empresa SpA',rut:'',giro:'',dir:'',fono:'',mail:'',logo:''},
+    clientes:[
+      {id:c1,nombre:'Ferretería El Clavo',contacto:'Juan Pérez',fono:'56999111222',mail:'jperez@elclavo.cl',estado:'activo',nota:''},
+      {id:c2,nombre:'Constructora Andes',contacto:'María Soto',fono:'56988333444',mail:'msoto@andes.cl',estado:'activo',nota:'Paga a 30 días'},
+      {id:c3,nombre:'Restaurant La Olla',contacto:'Pedro Díaz',fono:'56977555666',mail:'',estado:'prospecto',nota:'Interesado, enviar cotización'},
+    ],
+    productos:[
+      {id:uid(),nombre:'Tornillo autoperforante 8x1',sku:'TOR-081',cat:'Fijaciones',precio:120,stock:840,min:200},
+      {id:uid(),nombre:'Plancha OSB 11mm',sku:'OSB-011',cat:'Tableros',precio:12900,stock:14,min:20},
+      {id:uid(),nombre:'Pintura látex 1gl blanco',sku:'PIN-1GB',cat:'Pinturas',precio:18990,stock:60,min:15},
+      {id:uid(),nombre:'Cemento 25kg',sku:'CEM-025',cat:'Áridos',precio:5490,stock:0,min:30},
+      {id:uid(),nombre:'Guante cabritilla',sku:'GUA-CAB',cat:'Seguridad',precio:3490,stock:120,min:40},
+    ],
+    cotizaciones:[
+      {id:uid(),num:1001,clienteId:c2,fecha:hoy(),estado:'aceptada',items:[{d:'Plancha OSB 11mm',c:20,p:12900},{d:'Tornillo autoperforante 8x1',c:400,p:120}]},
+      {id:uid(),num:1002,clienteId:c3,fecha:hoy(),estado:'enviada',items:[{d:'Servicio de instalación',c:1,p:250000}]},
+    ],
+    cobros:[
+      {id:uid(),clienteId:c2,concepto:'Cotización #1001',monto:352920,emision:diasAtras(40),vence:diasAtras(10),estado:'pendiente'},
+      {id:uid(),clienteId:c1,concepto:'Factura 8842',monto:89000,emision:diasAtras(5),vence:diasAdelante(25),estado:'pendiente'},
+    ],
+    nextNum:1003,
+  };
+}
+/* ---------- utilidades ---------- */
+const CLP=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
+const clp=n=>CLP.format(Math.round(n||0));
+const NUM=new Intl.NumberFormat('es-CL');
+function hoy(){return new Date().toISOString().slice(0,10);}
+function diasAtras(d){const x=new Date();x.setDate(x.getDate()-d);return x.toISOString().slice(0,10);}
+function diasAdelante(d){return diasAtras(-d);}
+function fmtFecha(s){if(!s)return'';const[a,m,d]=s.split('-');return`${d}-${m}-${a}`;}
+function diasVencido(s){const d=Math.floor((new Date(hoy())-new Date(s))/86400000);return d;}
+function cliente(id){return DB.clientes.find(c=>c.id===id);}
+function esc(s){return(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+/* ---------- router ---------- */
+let VIEW='panel';
+const V=document.getElementById('view');
+const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
+document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
+function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
+const META={panel:['Panel','Resumen de tu empresa'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],cobranzas:['Cobranzas','Lo que te deben'],config:['Mi empresa','Datos para tus documentos']};
+function render(){
+  const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
+  ({panel:vPanel,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,cobranzas:vCobros,config:vConfig}[VIEW])();
+}
+
+/* ---------- PANEL ---------- */
+function vPanel(){
+  const ventasMes=DB.cotizaciones.filter(q=>q.estado==='aceptada').reduce((a,q)=>a+totalCotiz(q),0);
+  const porCobrar=DB.cobros.filter(c=>c.estado==='pendiente').reduce((a,c)=>a+c.monto,0);
+  const vencido=DB.cobros.filter(c=>c.estado==='pendiente'&&diasVencido(c.vence)>0).reduce((a,c)=>a+c.monto,0);
+  const valorInv=DB.productos.reduce((a,p)=>a+p.precio*p.stock,0);
+  const alertas=DB.productos.filter(p=>p.stock<=p.min).length;
+  const pipeline=DB.cotizaciones.filter(q=>q.estado==='enviada').reduce((a,q)=>a+totalCotiz(q),0);
+  V.innerHTML=`
+  <div class="kpis">
+    ${kpi('Clientes',DB.clientes.length,DB.clientes.filter(c=>c.estado==='activo').length+' activos')}
+    ${kpi('Ventas aceptadas',clp(ventasMes),'cotizaciones ganadas')}
+    ${kpi('Por cobrar',clp(porCobrar),(vencido>0?'<span style="color:#f87171">'+clp(vencido)+' vencido</span>':'al día'))}
+    ${kpi('Valor inventario',clp(valorInv),alertas+' alertas de stock')}
+  </div>
+  <div class="kpis">
+    ${kpi('Cotizaciones abiertas',DB.cotizaciones.filter(q=>q.estado==='enviada').length,clp(pipeline)+' en juego')}
+    ${kpi('Productos',DB.productos.length,DB.productos.reduce((a,p)=>a+p.stock,0)+' unidades')}
+    ${kpi('Prospectos',DB.clientes.filter(c=>c.estado==='prospecto').length,'por convertir')}
+    ${kpi('Cobros vencidos',DB.cobros.filter(c=>c.estado==='pendiente'&&diasVencido(c.vence)>0).length,'requieren gestión')}
+  </div>
+  <div class="card">
+    <table><thead><tr><th>Pendiente que te ayuda a priorizar</th><th>Detalle</th><th class="num">Monto</th><th></th></tr></thead><tbody>
+    ${tareas().map(t=>`<tr><td>${t.icon} ${esc(t.txt)}</td><td class="mini">${esc(t.det)}</td><td class="num">${t.monto?clp(t.monto):''}</td><td><button class="btn sm ghost" onclick="go('${t.goto}')">Ir</button></td></tr>`).join('')||'<tr><td colspan="4" class="empty">Todo en orden 🎉</td></tr>'}
+    </tbody></table>
+  </div>`;
+}
+function tareas(){
+  const t=[];
+  DB.cobros.filter(c=>c.estado==='pendiente'&&diasVencido(c.vence)>0).sort((a,b)=>diasVencido(b.vence)-diasVencido(a.vence)).forEach(c=>t.push({icon:'⏰',txt:'Cobrar a '+(cliente(c.clienteId)?.nombre||'cliente'),det:diasVencido(c.vence)+' días vencido · '+esc(c.concepto),monto:c.monto,goto:'cobranzas'}));
+  DB.productos.filter(p=>p.stock<=0).forEach(p=>t.push({icon:'🚫',txt:'Reponer '+esc(p.nombre),det:'sin stock',monto:0,goto:'inventario'}));
+  DB.productos.filter(p=>p.stock>0&&p.stock<=p.min).forEach(p=>t.push({icon:'⚠️',txt:'Stock bajo: '+esc(p.nombre),det:p.stock+' unidades (mín '+p.min+')',monto:0,goto:'inventario'}));
+  DB.cotizaciones.filter(q=>q.estado==='enviada').forEach(q=>t.push({icon:'📤',txt:'Seguir cotización #'+q.num,det:'a '+(cliente(q.clienteId)?.nombre||'cliente')+' · enviada',monto:totalCotiz(q),goto:'cotizaciones'}));
+  DB.clientes.filter(c=>c.estado==='prospecto').forEach(c=>t.push({icon:'✨',txt:'Convertir prospecto '+esc(c.nombre),det:esc(c.nota||'sin gestión'),monto:0,goto:'clientes'}));
+  return t.slice(0,12);
+}
+function kpi(l,v,s){return`<div class="kpi"><div class="lbl">${l}</div><div class="val">${v} <small>${s||''}</small></div></div>`;}
+
+/* ---------- CLIENTES ---------- */
+let qCli='';
+function vClientes(){
+  ACT.innerHTML=`<input class="search" placeholder="Buscar cliente…" oninput="qCli=this.value;vClientes()"><button class="btn" onclick="editCliente()">+ Cliente</button>`;
+  const list=DB.clientes.filter(c=>(c.nombre+c.contacto+c.mail).toLowerCase().includes(qCli.toLowerCase()));
+  V.innerHTML=`<div class="card"><table><thead><tr><th>Cliente</th><th>Contacto</th><th>Teléfono</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${list.map(c=>`<tr>
+    <td><b>${esc(c.nombre)}</b>${c.nota?'<div class="mini">'+esc(c.nota)+'</div>':''}</td>
+    <td>${esc(c.contacto||'—')}${c.mail?'<div class="mini">'+esc(c.mail)+'</div>':''}</td>
+    <td>${c.fono?`<a href="https://wa.me/${c.fono.replace(/\D/g,'')}" target="_blank">${esc(c.fono)} 💬</a>`:'—'}</td>
+    <td><span class="pill ${c.estado==='activo'?'ok':'warn'}">${c.estado}</span></td>
+    <td class="row"><button class="btn sm ghost" onclick="editCliente('${c.id}')">Editar</button><button class="btn sm ghost" onclick="delCliente('${c.id}')">🗑</button></td>
+  </tr>`).join('')||'<tr><td colspan="5" class="empty">Sin clientes. Agrega el primero.</td></tr>'}
+  </tbody></table></div>`;
+}
+function editCliente(id){
+  const c=id?cliente(id):{id:'',nombre:'',contacto:'',fono:'',mail:'',estado:'activo',nota:''};
+  openModal(`<h3>${id?'Editar':'Nuevo'} cliente</h3>
+  <div class="field"><label>Nombre / Empresa</label><input id="f_nom" value="${esc(c.nombre)}"></div>
+  <div class="grid2"><div class="field"><label>Persona de contacto</label><input id="f_con" value="${esc(c.contacto)}"></div>
+  <div class="field"><label>Teléfono (WhatsApp)</label><input id="f_fon" value="${esc(c.fono)}" placeholder="56 9 …"></div></div>
+  <div class="grid2"><div class="field"><label>Email</label><input id="f_mail" value="${esc(c.mail)}"></div>
+  <div class="field"><label>Estado</label><select id="f_est"><option ${c.estado==='activo'?'selected':''}>activo</option><option ${c.estado==='prospecto'?'selected':''}>prospecto</option></select></div></div>
+  <div class="field"><label>Nota</label><textarea id="f_nota" rows="2">${esc(c.nota)}</textarea></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveCliente('${c.id}')">Guardar</button></div>`);
+}
+function saveCliente(id){
+  const o={id:id||uid(),nombre:val('f_nom'),contacto:val('f_con'),fono:val('f_fon'),mail:val('f_mail'),estado:val('f_est'),nota:val('f_nota')};
+  if(!o.nombre){alert('Ponle un nombre al cliente');return;}
+  if(id){Object.assign(cliente(id),o);}else{DB.clientes.push(o);}
+  save();closeModal();vClientes();
+}
+function delCliente(id){if(confirm('¿Eliminar este cliente?')){DB.clientes=DB.clientes.filter(c=>c.id!==id);save();vClientes();}}
+
+/* ---------- COTIZACIONES ---------- */
+function totalCotiz(q){const neto=q.items.reduce((a,i)=>a+i.c*i.p,0);return Math.round(neto*1.19);}
+function netoCotiz(q){return q.items.reduce((a,i)=>a+i.c*i.p,0);}
+function vCotiz(){
+  ACT.innerHTML=`<button class="btn" onclick="editCotiz()">+ Cotización</button>`;
+  V.innerHTML=`<div class="card"><table><thead><tr><th>#</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead><tbody>
+  ${DB.cotizaciones.slice().reverse().map(q=>{const cl=cliente(q.clienteId);const est={borrador:'mut',enviada:'warn',aceptada:'ok',rechazada:'bad'}[q.estado]||'mut';return`<tr>
+    <td><b>#${q.num}</b></td><td>${esc(cl?.nombre||'—')}</td><td>${fmtFecha(q.fecha)}</td>
+    <td><span class="pill ${est}">${q.estado}</span></td><td class="num">${clp(totalCotiz(q))}</td>
+    <td class="row"><button class="btn sm ghost" onclick="verCotiz('${q.id}')">Ver</button><button class="btn sm ghost" onclick="editCotiz('${q.id}')">Editar</button><button class="btn sm ghost" onclick="delCotiz('${q.id}')">🗑</button></td>
+  </tr>`;}).join('')||'<tr><td colspan="6" class="empty">Sin cotizaciones aún.</td></tr>'}
+  </tbody></table></div>`;
+}
+let draft=null;
+function editCotiz(id){
+  draft=id?JSON.parse(JSON.stringify(DB.cotizaciones.find(q=>q.id===id))):{id:'',num:DB.nextNum,clienteId:DB.clientes[0]?.id||'',fecha:hoy(),estado:'borrador',items:[{d:'',c:1,p:0}]};
+  drawCotizForm(!!id);
+}
+function drawCotizForm(edit){
+  const opts=DB.clientes.map(c=>`<option value="${c.id}" ${c.id===draft.clienteId?'selected':''}>${esc(c.nombre)}</option>`).join('');
+  const prodOpts=DB.productos.map(p=>`<option value="${esc(p.nombre)}" data-p="${p.precio}">`).join('');
+  openModal(`<h3>${edit?'Editar':'Nueva'} cotización #${draft.num}</h3>
+  <div class="grid2">
+    <div class="field"><label>Cliente</label><select id="c_cli">${opts||'<option value="">— agrega clientes primero —</option>'}</select></div>
+    <div class="field"><label>Estado</label><select id="c_est">${['borrador','enviada','aceptada','rechazada'].map(e=>`<option ${draft.estado===e?'selected':''}>${e}</option>`).join('')}</select></div>
+  </div>
+  <datalist id="prods">${prodOpts}</datalist>
+  <label>Ítems</label><div id="items"></div>
+  <button class="btn ghost sm" onclick="addItem()">+ Agregar ítem</button>
+  <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+    <div class="tot"><span class="mini">Neto</span><b id="c_neto">$0</b></div>
+    <div class="tot"><span class="mini">IVA 19%</span><b id="c_iva">$0</b></div>
+    <div class="tot big"><span>Total</span><b id="c_tot">$0</b></div>
+  </div>
+  <div class="row" style="margin-top:14px"><span class="mini">Aceptada → genera un cobro automáticamente.</span><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveCotiz()">Guardar</button></div>`);
+  drawItems();
+}
+function drawItems(){
+  const box=document.getElementById('items');
+  box.innerHTML=draft.items.map((it,i)=>`<div class="lineitem">
+    <input list="prods" value="${esc(it.d)}" placeholder="Producto o servicio" oninput="setItem(${i},'d',this.value);autoprecio(${i},this.value)">
+    <input type="number" min="0" value="${it.c}" oninput="setItem(${i},'c',this.value)">
+    <input type="number" min="0" value="${it.p}" oninput="setItem(${i},'p',this.value)">
+    <div class="num" style="color:var(--mut)">${clp(it.c*it.p)}</div>
+    <button class="btn sm ghost" onclick="rmItem(${i})">✕</button>
+  </div>`).join('');
+  const neto=draft.items.reduce((a,i)=>a+i.c*i.p,0);
+  document.getElementById('c_neto').textContent=clp(neto);
+  document.getElementById('c_iva').textContent=clp(neto*.19);
+  document.getElementById('c_tot').textContent=clp(neto*1.19);
+}
+function setItem(i,k,v){draft.items[i][k]=k==='d'?v:(+v||0);if(k!=='d')drawItems();}
+function autoprecio(i,name){const p=DB.productos.find(x=>x.nombre===name);if(p&&!draft.items[i].p){draft.items[i].p=p.precio;drawItems();}}
+function addItem(){draft.items.push({d:'',c:1,p:0});drawItems();}
+function rmItem(i){draft.items.splice(i,1);if(!draft.items.length)draft.items.push({d:'',c:1,p:0});drawItems();}
+function saveCotiz(){
+  draft.clienteId=val('c_cli');draft.estado=val('c_est');
+  draft.items=draft.items.filter(i=>i.d);
+  if(!draft.items.length){alert('Agrega al menos un ítem');return;}
+  let q;
+  if(draft.id){q=DB.cotizaciones.find(x=>x.id===draft.id);Object.assign(q,draft);}
+  else{draft.id=uid();DB.cotizaciones.push(draft);DB.nextNum++;q=draft;}
+  if(q.estado==='aceptada'&&!DB.cobros.some(c=>c.cotizId===q.id)){
+    DB.cobros.push({id:uid(),cotizId:q.id,clienteId:q.clienteId,concepto:'Cotización #'+q.num,monto:totalCotiz(q),emision:hoy(),vence:diasAdelante(30),estado:'pendiente'});
+  }
+  save();closeModal();vCotiz();
+}
+function delCotiz(id){if(confirm('¿Eliminar cotización?')){DB.cotizaciones=DB.cotizaciones.filter(q=>q.id!==id);save();vCotiz();}}
+function verCotiz(id){
+  const q=DB.cotizaciones.find(x=>x.id===id);const cl=cliente(q.clienteId)||{};const e=DB.empresa;
+  const neto=netoCotiz(q);
+  openModal(`<div class="doc" id="doc">
+    <div class="row" style="align-items:flex-start">
+      <div>${e.logo?`<img src="${e.logo}" style="max-height:54px;margin-bottom:6px">`:''}<h2>${esc(e.nombre||'Mi Empresa')}</h2><div class="mini">${esc(e.giro||'')}${e.rut?' · '+esc(e.rut):''}</div><div class="mini">${esc(e.dir||'')}</div><div class="mini">${esc(e.fono||'')} ${esc(e.mail||'')}</div></div>
+      <span class="spacer"></span>
+      <div style="text-align:right"><h2 style="color:#7c5cff">COTIZACIÓN</h2><div class="mini">N° ${q.num}</div><div class="mini">${fmtFecha(q.fecha)}</div></div>
+    </div>
+    <div style="margin:16px 0;padding:12px;background:#f3f4f6;border-radius:8px"><b>Cliente:</b> ${esc(cl.nombre||'')}<br><span class="mini">${esc(cl.contacto||'')} · ${esc(cl.fono||'')} · ${esc(cl.mail||'')}</span></div>
+    <table><thead><tr><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead><tbody>
+    ${q.items.map(i=>`<tr><td>${esc(i.d)}</td><td class="num">${NUM.format(i.c)}</td><td class="num">${clp(i.p)}</td><td class="num">${clp(i.c*i.p)}</td></tr>`).join('')}
+    </tbody></table>
+    <div style="margin-top:14px;margin-left:auto;max-width:280px">
+      <div class="tot"><span>Neto</span><b>${clp(neto)}</b></div>
+      <div class="tot"><span>IVA 19%</span><b>${clp(neto*.19)}</b></div>
+      <div class="tot big"><span>TOTAL</span><b>${clp(neto*1.19)}</b></div>
+    </div>
+  </div>
+  <div class="row noprint" style="margin-top:16px"><button class="btn ghost" onclick="closeModal()">Cerrar</button><span class="spacer"></span>
+  ${cl.fono?`<a class="btn ok" target="_blank" href="https://wa.me/${(cl.fono||'').replace(/\\D/g,'')}?text=${encodeURIComponent('Hola '+(cl.contacto||cl.nombre||'')+', te envío la cotización #'+q.num+' por '+clp(totalCotiz(q))+'.')}">Enviar por WhatsApp</a>`:''}
+  <button class="btn" onclick="window.print()">Descargar PDF</button></div>`);
+}
+
+/* ---------- INVENTARIO ---------- */
+let qInv='',fInv='all';
+function estadoP(p){return p.stock<=0?'bad':(p.stock<=p.min?'warn':'ok');}
+function vInv(){
+  ACT.innerHTML=`<input class="search" placeholder="Buscar producto…" oninput="qInv=this.value;vInv()">
+  <select style="width:auto" onchange="fInv=this.value;vInv()"><option value="all" ${fInv==='all'?'selected':''}>Todos</option><option value="warn" ${fInv==='warn'?'selected':''}>Stock bajo</option><option value="bad" ${fInv==='bad'?'selected':''}>Agotados</option></select>
+  <button class="btn ghost" onclick="exportInv()">Exportar CSV</button><button class="btn" onclick="editProd()">+ Producto</button>`;
+  let list=DB.productos.filter(p=>(p.nombre+p.sku+p.cat).toLowerCase().includes(qInv.toLowerCase()));
+  if(fInv==='warn')list=list.filter(p=>p.stock>0&&p.stock<=p.min);
+  if(fInv==='bad')list=list.filter(p=>p.stock<=0);
+  const label={ok:'OK',warn:'Bajo',bad:'Agotado'};
+  V.innerHTML=`<div class="card"><table><thead><tr><th>Producto</th><th>SKU</th><th>Categoría</th><th class="num">Precio</th><th class="num">Stock</th><th>Estado</th><th class="num">Valor</th><th></th></tr></thead><tbody>
+  ${list.map(p=>{const s=estadoP(p);return`<tr>
+    <td><b>${esc(p.nombre)}</b></td><td class="mini">${esc(p.sku||'—')}</td><td>${esc(p.cat||'—')}</td>
+    <td class="num">${clp(p.precio)}</td>
+    <td class="num"><button class="btn sm ghost" onclick="ajustar('${p.id}',-1)">−</button> <b>${NUM.format(p.stock)}</b> <button class="btn sm ghost" onclick="ajustar('${p.id}',1)">+</button></td>
+    <td><span class="pill ${s}">${label[s]}</span></td>
+    <td class="num">${clp(p.precio*p.stock)}</td>
+    <td class="row"><button class="btn sm ghost" onclick="editProd('${p.id}')">Editar</button><button class="btn sm ghost" onclick="delProd('${p.id}')">🗑</button></td>
+  </tr>`;}).join('')||'<tr><td colspan="8" class="empty">Sin productos.</td></tr>'}
+  </tbody></table></div>`;
+}
+function ajustar(id,d){const p=DB.productos.find(x=>x.id===id);p.stock=Math.max(0,p.stock+d);save();vInv();}
+function editProd(id){
+  const p=id?DB.productos.find(x=>x.id===id):{id:'',nombre:'',sku:'',cat:'',precio:0,stock:0,min:0};
+  openModal(`<h3>${id?'Editar':'Nuevo'} producto</h3>
+  <div class="field"><label>Nombre</label><input id="p_nom" value="${esc(p.nombre)}"></div>
+  <div class="grid2"><div class="field"><label>SKU / código</label><input id="p_sku" value="${esc(p.sku)}"></div>
+  <div class="field"><label>Categoría</label><input id="p_cat" value="${esc(p.cat)}"></div></div>
+  <div class="grid2"><div class="field"><label>Precio (CLP)</label><input id="p_pre" type="number" value="${p.precio}"></div>
+  <div class="field"><label>Stock actual</label><input id="p_sto" type="number" value="${p.stock}"></div></div>
+  <div class="field"><label>Stock mínimo (alerta)</label><input id="p_min" type="number" value="${p.min}"></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveProd('${p.id}')">Guardar</button></div>`);
+}
+function saveProd(id){
+  const o={id:id||uid(),nombre:val('p_nom'),sku:val('p_sku'),cat:val('p_cat'),precio:+val('p_pre')||0,stock:+val('p_sto')||0,min:+val('p_min')||0};
+  if(!o.nombre){alert('Ponle nombre');return;}
+  if(id){Object.assign(DB.productos.find(x=>x.id===id),o);}else{DB.productos.push(o);}
+  save();closeModal();vInv();
+}
+function delProd(id){if(confirm('¿Eliminar producto?')){DB.productos=DB.productos.filter(p=>p.id!==id);save();vInv();}}
+function exportInv(){
+  const rows=[['Nombre','SKU','Categoria','Precio','Stock','Minimo','Estado','Valor']];
+  DB.productos.forEach(p=>rows.push([p.nombre,p.sku,p.cat,p.precio,p.stock,p.min,{ok:'OK',warn:'Bajo',bad:'Agotado'}[estadoP(p)],p.precio*p.stock]));
+  descargaCSV('inventario.csv',rows);
+}
+
+/* ---------- COBRANZAS ---------- */
+function vCobros(){
+  ACT.innerHTML=`<button class="btn ghost" onclick="exportCobros()">Exportar CSV</button><button class="btn" onclick="editCobro()">+ Cobro</button>`;
+  const pend=DB.cobros.filter(c=>c.estado==='pendiente');
+  const totalP=pend.reduce((a,c)=>a+c.monto,0);
+  const venc=pend.filter(c=>diasVencido(c.vence)>0).reduce((a,c)=>a+c.monto,0);
+  V.innerHTML=`<div class="kpis">
+    ${kpi('Por cobrar',clp(totalP),pend.length+' documentos')}
+    ${kpi('Vencido',clp(venc),'<span style="color:#f87171">requiere gestión</span>')}
+    ${kpi('Cobrado (histórico)',clp(DB.cobros.filter(c=>c.estado==='pagado').reduce((a,c)=>a+c.monto,0)),'')}
+  </div>
+  <div class="card"><table><thead><tr><th>Cliente</th><th>Concepto</th><th>Vence</th><th>Atraso</th><th class="num">Monto</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${DB.cobros.slice().sort((a,b)=>new Date(a.vence)-new Date(b.vence)).map(c=>{
+    const cl=cliente(c.clienteId);const dv=diasVencido(c.vence);const vencido=c.estado==='pendiente'&&dv>0;
+    const msg=encodeURIComponent(`Hola ${cl?.contacto||cl?.nombre||''}, te recordamos el pago de ${esc(c.concepto)} por ${clp(c.monto)}${vencido?' (vencido hace '+dv+' días)':''}. ¡Gracias!`);
+    return`<tr style="${vencido?'background:rgba(239,68,68,.06)':''}">
+    <td><b>${esc(cl?.nombre||'—')}</b></td><td>${esc(c.concepto)}</td><td>${fmtFecha(c.vence)}</td>
+    <td>${c.estado==='pagado'?'—':(dv>0?'<span class="pill bad">'+dv+' días</span>':(dv===0?'<span class="pill warn">hoy</span>':'<span class="pill mut">en '+(-dv)+' días</span>'))}</td>
+    <td class="num">${clp(c.monto)}</td>
+    <td><span class="pill ${c.estado==='pagado'?'ok':'warn'}">${c.estado}</span></td>
+    <td class="row">
+      ${c.estado==='pendiente'?`<button class="btn sm ok" onclick="pagar('${c.id}')">Pagado</button>`:`<button class="btn sm ghost" onclick="despagar('${c.id}')">↺</button>`}
+      ${cl?.fono&&c.estado==='pendiente'?`<a class="btn sm warn" target="_blank" href="https://wa.me/${cl.fono.replace(/\\D/g,'')}?text=${msg}">Recordar 💬</a>`:''}
+      <button class="btn sm ghost" onclick="editCobro('${c.id}')">✎</button>
+      <button class="btn sm ghost" onclick="delCobro('${c.id}')">🗑</button>
+    </td></tr>`;}).join('')||'<tr><td colspan="7" class="empty">Sin cobros registrados.</td></tr>'}
+  </tbody></table></div>`;
+}
+function pagar(id){DB.cobros.find(c=>c.id===id).estado='pagado';save();vCobros();}
+function despagar(id){DB.cobros.find(c=>c.id===id).estado='pendiente';save();vCobros();}
+function editCobro(id){
+  const c=id?DB.cobros.find(x=>x.id===id):{id:'',clienteId:DB.clientes[0]?.id||'',concepto:'',monto:0,emision:hoy(),vence:diasAdelante(30),estado:'pendiente'};
+  const opts=DB.clientes.map(x=>`<option value="${x.id}" ${x.id===c.clienteId?'selected':''}>${esc(x.nombre)}</option>`).join('');
+  openModal(`<h3>${id?'Editar':'Nuevo'} cobro</h3>
+  <div class="field"><label>Cliente</label><select id="k_cli">${opts||'<option value="">— agrega clientes —</option>'}</select></div>
+  <div class="field"><label>Concepto</label><input id="k_con" value="${esc(c.concepto)}" placeholder="Factura 1234 / Servicio…"></div>
+  <div class="grid2"><div class="field"><label>Monto (CLP)</label><input id="k_mon" type="number" value="${c.monto}"></div>
+  <div class="field"><label>Vence</label><input id="k_ven" type="date" value="${c.vence}"></div></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveCobro('${c.id}')">Guardar</button></div>`);
+}
+function saveCobro(id){
+  const o={id:id||uid(),clienteId:val('k_cli'),concepto:val('k_con'),monto:+val('k_mon')||0,vence:val('k_ven'),emision:id?DB.cobros.find(c=>c.id===id).emision:hoy(),estado:id?DB.cobros.find(c=>c.id===id).estado:'pendiente'};
+  if(!o.concepto){alert('Escribe un concepto');return;}
+  if(id){Object.assign(DB.cobros.find(c=>c.id===id),o);}else{DB.cobros.push(o);}
+  save();closeModal();vCobros();
+}
+function delCobro(id){if(confirm('¿Eliminar cobro?')){DB.cobros=DB.cobros.filter(c=>c.id!==id);save();vCobros();}}
+function exportCobros(){
+  const rows=[['Cliente','Concepto','Vence','Monto','Estado','DiasAtraso']];
+  DB.cobros.forEach(c=>rows.push([cliente(c.clienteId)?.nombre||'',c.concepto,c.vence,c.monto,c.estado,Math.max(0,diasVencido(c.vence))]));
+  descargaCSV('cobranzas.csv',rows);
+}
+
+/* ---------- MI EMPRESA ---------- */
+function vConfig(){
+  const e=DB.empresa;
+  V.innerHTML=`<div class="card" style="padding:22px;max-width:640px">
+  <div class="field"><label>Logo</label>
+    <div class="row">${e.logo?`<img src="${e.logo}" style="max-height:50px;border-radius:8px">`:'<span class="mini">Sin logo</span>'}
+    <input type="file" accept="image/*" onchange="subeLogo(this)" style="width:auto"></div></div>
+  <div class="field"><label>Nombre de la empresa</label><input id="e_nom" value="${esc(e.nombre)}"></div>
+  <div class="grid2"><div class="field"><label>RUT</label><input id="e_rut" value="${esc(e.rut)}"></div>
+  <div class="field"><label>Giro</label><input id="e_giro" value="${esc(e.giro)}"></div></div>
+  <div class="field"><label>Dirección</label><input id="e_dir" value="${esc(e.dir)}"></div>
+  <div class="grid2"><div class="field"><label>Teléfono</label><input id="e_fono" value="${esc(e.fono)}"></div>
+  <div class="field"><label>Email</label><input id="e_mail" value="${esc(e.mail)}"></div></div>
+  <div class="row"><span class="spacer"></span><button class="btn" onclick="saveEmpresa()">Guardar</button></div>
+  <hr style="border-color:var(--line);margin:20px 0">
+  <div class="row"><button class="btn ghost" onclick="backupJSON()">Descargar respaldo</button><button class="btn ghost" onclick="document.getElementById('imp').click()">Restaurar respaldo</button><input id="imp" type="file" accept=".json" class="hide" onchange="restoreJSON(this)"></div>
+  <div class="mini" style="margin-top:8px">El respaldo te sirve para pasar tus datos a otro equipo.</div>
+  </div>`;
+}
+function subeLogo(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{DB.empresa.logo=e.target.result;save();vConfig();};r.readAsDataURL(f);}
+function saveEmpresa(){Object.assign(DB.empresa,{nombre:val('e_nom'),rut:val('e_rut'),giro:val('e_giro'),dir:val('e_dir'),fono:val('e_fono'),mail:val('e_mail')});save();alert('Guardado ✓');}
+function backupJSON(){const b=new Blob([JSON.stringify(DB)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='numen-suite-respaldo.json';a.click();}
+function restoreJSON(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.v)throw 0;localStorage.setItem(KEY,e.target.result);location.reload();}catch(_){alert('Archivo no válido');}};r.readAsText(f);}
+
+/* ---------- helpers UI ---------- */
+function openModal(html){document.getElementById('sheet').innerHTML=html;document.getElementById('modal').classList.add('on');}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+function val(id){return document.getElementById(id).value.trim();}
+function descargaCSV(name,rows){const csv='﻿'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();}
+
+render();
+</script>
+</body>
+</html>
