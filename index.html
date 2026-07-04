@@ -98,6 +98,15 @@
   .docedit:focus{outline:2px solid var(--acc)}
   .docedit h2{margin:.4em 0}
   .doccard{cursor:pointer}
+  .hojawrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:70vh}
+  table.hoja{border-collapse:collapse;font-size:13px;background:var(--panel)}
+  table.hoja th{background:#0f172a;color:#94a3b8;font-weight:600;border:1px solid var(--line);padding:4px 8px;position:sticky;top:0;z-index:1;min-width:44px}
+  table.hoja th.hrow{left:0;z-index:2;min-width:36px;text-align:center}
+  table.hoja th.hcorner{left:0;top:0;z-index:3}
+  table.hoja td{border:1px solid var(--line);padding:0}
+  table.hoja input{width:120px;border:0;background:transparent;color:var(--tx);padding:5px 8px;font-size:13px;outline:none;font-family:inherit}
+  table.hoja input:focus{outline:2px solid var(--acc);background:#0b1220}
+  table.hoja input.fx{color:#34d399}
 </style>
 </head>
 <body>
@@ -114,6 +123,7 @@
       <button data-v="ventas"><span class="ico">◎</span><span class="t">Ventas / Caja</span></button>
       <button data-v="cobranzas"><span class="ico">◱</span><span class="t">Cobranzas</span></button>
       <button data-v="documentos"><span class="ico">≣</span><span class="t">Documentos</span></button>
+      <button data-v="hojas"><span class="ico">▥</span><span class="t">Hojas de cálculo</span></button>
       <button data-v="config"><span class="ico">⚙</span><span class="t">Mi empresa</span></button>
     </nav>
     <div class="foot">Datos guardados en este equipo.<br>Sin cuentas · sin costo.</div>
@@ -135,7 +145,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas','docs'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs','hojas'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -210,6 +220,17 @@ function seed(){
         {id:uid(),titulo:'El trabajo como juego: gamificación neurocientífica',contenido:'El cerebro aprende y se motiva con progreso visible, recompensa y reto a la medida. Por eso toda esta plataforma es un RPG: cada avance se ve, suma XP y sube tu nivel.',puntos:70,hecha:false},
       ]},
     ]},
+    hojas:[
+      {id:uid(),titulo:'Presupuesto mensual',updated:hoy(),rows:12,cols:6,cells:{
+        A1:'Concepto',B1:'Monto mensual',
+        A2:'Arriendo local',B2:'450000',
+        A3:'Sueldos',B3:'1200000',
+        A4:'Insumos',B4:'320000',
+        A5:'Marketing',B5:'150000',
+        A7:'TOTAL',B7:'=SUM(B2:B5)',
+        A8:'Promedio',B8:'=PROMEDIO(B2:B5)',
+      }},
+    ],
     nextNum:1003,
   };
 }
@@ -231,10 +252,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,config:vConfig}[VIEW])();
+  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,config:vConfig}[VIEW])();
   renderPlayer();
 }
 
@@ -755,6 +776,81 @@ function nuevoDoc(){const d={id:uid(),titulo:'Documento sin título',html:'',upd
 function abrirDoc(id){openDoc=id;vDocs();}
 function cerrarDoc(){openDoc=null;vDocs();}
 function delDoc(id){if(confirm('¿Eliminar documento?')){DB.docs=DB.docs.filter(d=>d.id!==id);if(openDoc===id)openDoc=null;save();vDocs();}}
+
+/* ---------- HOJAS DE CÁLCULO (motor tipo Excel) ---------- */
+let openHoja=null;
+function idxToCol(i){let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;}
+function hojaGet(h,k){return h.cells[k]==null?'':String(h.cells[k]);}
+function rangoRefs(a,b){
+  const pa=a.match(/^([A-Z]+)(\d+)$/),pb=b.match(/^([A-Z]+)(\d+)$/);if(!pa||!pb)return[];
+  const c1=colIdx(pa[1]),r1=+pa[2],c2=colIdx(pb[1]),r2=+pb[2];const out=[];
+  for(let r=Math.min(r1,r2);r<=Math.max(r1,r2);r++)for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++)out.push(idxToCol(c)+r);
+  return out;
+}
+function colIdx(c){let n=0;for(const ch of c)n=n*26+(ch.charCodeAt(0)-64);return n-1;}
+function evalCell(h,key,seen){
+  const raw=hojaGet(h,key).trim();
+  if(raw[0]!=='='){if(raw==='')return'';const n=parseFloat(raw.replace(/\./g,'').replace(',','.'));return(/^-?[\d\.\,]+$/.test(raw)&&!isNaN(n))?n:raw;}
+  if(seen.has(key))return'#CIRC';
+  seen.add(key);
+  try{
+    let expr=raw.slice(1);
+    expr=expr.replace(/([A-Z]+\d+)\s*:\s*([A-Z]+\d+)/g,(m,a,b)=>rangoRefs(a,b).join(','));
+    expr=expr.replace(/[A-Z]+\d+/g,r=>{const v=evalCell(h,r,seen);return typeof v==='number'?v:(v===''?0:JSON.stringify(v));});
+    const SUM=(...a)=>a.flat().reduce((x,y)=>x+(+y||0),0);
+    const PROMEDIO=(...a)=>{const f=a.flat().map(Number);return f.length?f.reduce((x,y)=>x+y,0)/f.length:0;};
+    const MIN=(...a)=>Math.min(...a.flat().map(Number));
+    const MAX=(...a)=>Math.max(...a.flat().map(Number));
+    const CONTAR=(...a)=>a.flat().filter(x=>x!==''&&x!=null&&!isNaN(+x)).length;
+    const val=Function('SUM','SUMA','PROMEDIO','AVERAGE','MIN','MAX','CONTAR','COUNT','"use strict";return('+expr+')')(SUM,SUM,PROMEDIO,PROMEDIO,MIN,MAX,CONTAR,CONTAR);
+    return(typeof val==='number'&&!isFinite(val))?'#ERR':val;
+  }catch(e){return'#ERR';}
+  finally{seen.delete(key);}
+}
+function cellShow(h,key){const v=evalCell(h,key,new Set());return typeof v==='number'?NUM.format(Math.round(v*100)/100):esc(String(v));}
+function vHojas(){
+  if(openHoja&&DB.hojas.some(h=>h.id===openHoja))return renderHojaEditor();
+  openHoja=null;
+  ACT.innerHTML=`<button class="btn" onclick="nuevaHoja()">+ Hoja</button>`;
+  V.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+  ${DB.hojas.slice().reverse().map(h=>`<div class="card doccard" style="padding:16px" onclick="abrirHoja('${h.id}')">
+    <b>▥ ${esc(h.titulo||'Sin título')}</b>
+    <div class="mini" style="margin:6px 0">${h.rows||12} filas · ${h.cols||6} columnas</div>
+    <div class="row" style="justify-content:space-between;align-items:center"><span class="mini">${fmtFecha(h.updated||'')}</span><button class="btn sm ghost" onclick="event.stopPropagation();delHoja('${h.id}')">🗑</button></div>
+  </div>`).join('')||'<div class="empty">Crea tu primera hoja de cálculo.</div>'}
+  </div>`;
+}
+function renderHojaEditor(){
+  const h=DB.hojas.find(x=>x.id===openHoja);
+  ACT.innerHTML=`<button class="btn ghost" onclick="cerrarHoja()">← Volver a hojas</button>`;
+  let head='<th class="hcorner"></th>';for(let c=0;c<h.cols;c++)head+=`<th>${idxToCol(c+1)}</th>`;
+  let body='';
+  for(let r=1;r<=h.rows;r++){
+    body+=`<tr><th class="hrow">${r}</th>`;
+    for(let c=0;c<h.cols;c++){const k=idxToCol(c+1)+r;const raw=hojaGet(h,k);const isF=raw[0]==='=';
+      body+=`<td><input data-k="${k}" class="${isF?'fx':''}" value="${cellShow(h,k)}" onfocus="this.value=hojaRaw('${k}');this.select()" onblur="hojaSet('${k}',this.value)" onkeydown="hojaKey(event,'${k}')"></td>`;}
+    body+='</tr>';
+  }
+  V.innerHTML=`
+  <input id="hj_tit" value="${esc(h.titulo)}" style="font-size:20px;font-weight:700;margin-bottom:12px;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0" oninput="hojaTitulo(this.value)">
+  <div class="doctoolbar">
+    <button class="btn sm ghost" onclick="hojaMas('rows')">+ Fila</button>
+    <button class="btn sm ghost" onclick="hojaMas('cols')">+ Columna</button>
+    <span class="mini" style="margin-left:8px">Escribe <b>=SUM(B2:B5)</b>, =PROMEDIO, =MIN, =MAX, =CONTAR o fórmulas con + − * /</span>
+    <span class="spacer"></span><button class="btn sm ghost" onclick="window.print()">Imprimir / PDF</button>
+  </div>
+  <div class="hojawrap"><table class="hoja">${head?`<thead><tr>${head}</tr></thead>`:''}<tbody>${body}</tbody></table></div>
+  <div class="mini" style="margin-top:8px">Se guarda solo. Las celdas con fórmula se recalculan al salir de la celda.</div>`;
+}
+function hojaRaw(k){const h=DB.hojas.find(x=>x.id===openHoja);return hojaGet(h,k);}
+function hojaSet(k,v){const h=DB.hojas.find(x=>x.id===openHoja);if(v==='')delete h.cells[k];else h.cells[k]=v;h.updated=hoy();save();renderHojaEditor();}
+function hojaKey(e,k){if(e.key==='Enter'){e.preventDefault();e.target.blur();}}
+function hojaTitulo(v){const h=DB.hojas.find(x=>x.id===openHoja);h.titulo=v;h.updated=hoy();save();}
+function hojaMas(dim){const h=DB.hojas.find(x=>x.id===openHoja);if(dim==='rows')h.rows=(h.rows||12)+5;else h.cols=Math.min((h.cols||6)+2,26);save();renderHojaEditor();}
+function nuevaHoja(){const h={id:uid(),titulo:'Hoja sin título',updated:hoy(),rows:12,cols:6,cells:{}};DB.hojas.push(h);save();openHoja=h.id;vHojas();}
+function abrirHoja(id){openHoja=id;vHojas();}
+function cerrarHoja(){openHoja=null;vHojas();}
+function delHoja(id){if(confirm('¿Eliminar hoja?')){DB.hojas=DB.hojas.filter(h=>h.id!==id);if(openHoja===id)openHoja=null;save();vHojas();}}
 
 /* ---------- JUGADOR (capa RPG global) ---------- */
 function renderPlayer(){
