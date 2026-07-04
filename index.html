@@ -95,6 +95,7 @@
       <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
       <button data-v="cotizaciones"><span class="ico">◈</span><span class="t">Cotizaciones</span></button>
       <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
+      <button data-v="ventas"><span class="ico">◎</span><span class="t">Ventas / Caja</span></button>
       <button data-v="cobranzas"><span class="ico">◱</span><span class="t">Cobranzas</span></button>
       <button data-v="config"><span class="ico">⚙</span><span class="t">Mi empresa</span></button>
     </nav>
@@ -116,6 +117,8 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
+['clientes','productos','cotizaciones','cobros','ventas'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+if(!DB.empresa)DB.empresa={};
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.v)return r;}catch(e){}return seed();}
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -143,6 +146,10 @@ function seed(){
       {id:uid(),clienteId:c2,concepto:'Cotización #1001',monto:352920,emision:diasAtras(40),vence:diasAtras(10),estado:'pendiente'},
       {id:uid(),clienteId:c1,concepto:'Factura 8842',monto:89000,emision:diasAtras(5),vence:diasAdelante(25),estado:'pendiente'},
     ],
+    ventas:[
+      {id:uid(),fecha:hoy(),clienteId:'',pago:'efectivo',items:[{d:'Pintura látex 1gl blanco',c:2,p:18990},{d:'Guante cabritilla',c:3,p:3490}]},
+      {id:uid(),fecha:hoy(),clienteId:c1,pago:'tarjeta',items:[{d:'Tornillo autoperforante 8x1',c:100,p:120}]},
+    ],
     nextNum:1003,
   };
 }
@@ -164,10 +171,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],cobranzas:['Cobranzas','Lo que te deben'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,cobranzas:vCobros,config:vConfig}[VIEW])();
+  ({panel:vPanel,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,config:vConfig}[VIEW])();
 }
 
 /* ---------- PANEL ---------- */
@@ -178,8 +185,11 @@ function vPanel(){
   const valorInv=DB.productos.reduce((a,p)=>a+p.precio*p.stock,0);
   const alertas=DB.productos.filter(p=>p.stock<=p.min).length;
   const pipeline=DB.cotizaciones.filter(q=>q.estado==='enviada').reduce((a,q)=>a+totalCotiz(q),0);
+  const cajaHoy=DB.ventas.filter(v=>v.fecha===hoy()).reduce((a,v)=>a+totalVenta(v),0);
+  const nVentasHoy=DB.ventas.filter(v=>v.fecha===hoy()).length;
   V.innerHTML=`
   <div class="kpis">
+    ${kpi('Caja de hoy',clp(cajaHoy),nVentasHoy+' ventas')}
     ${kpi('Clientes',DB.clientes.length,DB.clientes.filter(c=>c.estado==='activo').length+' activos')}
     ${kpi('Ventas aceptadas',clp(ventasMes),'cotizaciones ganadas')}
     ${kpi('Por cobrar',clp(porCobrar),(vencido>0?'<span style="color:#f87171">'+clp(vencido)+' vencido</span>':'al día'))}
@@ -379,6 +389,80 @@ function exportInv(){
   const rows=[['Nombre','SKU','Categoria','Precio','Stock','Minimo','Estado','Valor']];
   DB.productos.forEach(p=>rows.push([p.nombre,p.sku,p.cat,p.precio,p.stock,p.min,{ok:'OK',warn:'Bajo',bad:'Agotado'}[estadoP(p)],p.precio*p.stock]));
   descargaCSV('inventario.csv',rows);
+}
+
+/* ---------- VENTAS / CAJA ---------- */
+function totalVenta(v){return v.items.reduce((a,i)=>a+i.c*i.p,0);}
+let ventaDraft=null;
+function vVentas(){
+  ACT.innerHTML=`<button class="btn ghost" onclick="exportVentas()">Exportar CSV</button><button class="btn" onclick="editVenta()">+ Venta</button>`;
+  const hoyStr=hoy();
+  const delDia=DB.ventas.filter(v=>v.fecha===hoyStr);
+  const porPago=m=>delDia.filter(v=>v.pago===m).reduce((a,v)=>a+totalVenta(v),0);
+  const totHoy=delDia.reduce((a,v)=>a+totalVenta(v),0);
+  V.innerHTML=`<div class="kpis">
+    ${kpi('Caja de hoy',clp(totHoy),delDia.length+' ventas')}
+    ${kpi('Efectivo',clp(porPago('efectivo')),'')}
+    ${kpi('Tarjeta',clp(porPago('tarjeta')),'')}
+    ${kpi('Transferencia',clp(porPago('transferencia')),'')}
+  </div>
+  <div class="card"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Pago</th><th class="num">Total</th><th></th></tr></thead><tbody>
+  ${DB.ventas.slice().reverse().map(v=>{const cl=cliente(v.clienteId);return`<tr>
+    <td>${fmtFecha(v.fecha)}</td><td>${esc(cl?.nombre||'Público general')}</td>
+    <td class="mini">${v.items.map(i=>esc(i.d)+' ×'+i.c).join(', ')}</td>
+    <td><span class="pill ${v.pago==='crédito'?'warn':'ok'}">${v.pago}</span></td>
+    <td class="num">${clp(totalVenta(v))}</td>
+    <td class="row"><button class="btn sm ghost" onclick="delVenta('${v.id}')">🗑</button></td>
+  </tr>`;}).join('')||'<tr><td colspan="6" class="empty">Sin ventas registradas.</td></tr>'}
+  </tbody></table></div>`;
+}
+function editVenta(){ventaDraft={clienteId:'',pago:'efectivo',items:[{d:'',c:1,p:0}]};drawVentaForm();}
+function drawVentaForm(){
+  const opts='<option value="">Público general</option>'+DB.clientes.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  const prodOpts=DB.productos.map(p=>`<option value="${esc(p.nombre)}" data-p="${p.precio}">`).join('');
+  openModal(`<h3>Nueva venta</h3>
+  <div class="grid2">
+    <div class="field"><label>Cliente (opcional)</label><select id="v_cli">${opts}</select></div>
+    <div class="field"><label>Forma de pago</label><select id="v_pago">${['efectivo','tarjeta','transferencia','crédito'].map(e=>`<option>${e}</option>`).join('')}</select></div>
+  </div>
+  <datalist id="vprods">${prodOpts}</datalist>
+  <label>Productos</label><div id="vitems"></div>
+  <button class="btn ghost sm" onclick="addVItem()">+ Agregar producto</button>
+  <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px"><div class="tot big"><span>Total</span><b id="v_tot">$0</b></div></div>
+  <div class="row" style="margin-top:14px"><span class="mini">Descuenta stock del inventario. "Crédito" genera un cobro.</span><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveVenta()">Registrar venta</button></div>`);
+  drawVItems();
+}
+function drawVItems(){
+  document.getElementById('vitems').innerHTML=ventaDraft.items.map((it,i)=>`<div class="lineitem">
+    <input list="vprods" value="${esc(it.d)}" placeholder="Producto" oninput="setVItem(${i},'d',this.value);autoprecioV(${i},this.value)">
+    <input type="number" min="0" value="${it.c}" oninput="setVItem(${i},'c',this.value)">
+    <input type="number" min="0" value="${it.p}" oninput="setVItem(${i},'p',this.value)">
+    <div class="num" style="color:var(--mut)">${clp(it.c*it.p)}</div>
+    <button class="btn sm ghost" onclick="rmVItem(${i})">✕</button>
+  </div>`).join('');
+  document.getElementById('v_tot').textContent=clp(ventaDraft.items.reduce((a,i)=>a+i.c*i.p,0));
+}
+function setVItem(i,k,v){ventaDraft.items[i][k]=k==='d'?v:(+v||0);if(k!=='d')drawVItems();}
+function autoprecioV(i,name){const p=DB.productos.find(x=>x.nombre===name);if(p){ventaDraft.items[i].p=p.precio;drawVItems();}}
+function addVItem(){ventaDraft.items.push({d:'',c:1,p:0});drawVItems();}
+function rmVItem(i){ventaDraft.items.splice(i,1);if(!ventaDraft.items.length)ventaDraft.items.push({d:'',c:1,p:0});drawVItems();}
+function saveVenta(){
+  ventaDraft.clienteId=val('v_cli');ventaDraft.pago=val('v_pago');
+  ventaDraft.items=ventaDraft.items.filter(i=>i.d);
+  if(!ventaDraft.items.length){alert('Agrega al menos un producto');return;}
+  ventaDraft.items.forEach(it=>{const p=DB.productos.find(x=>x.nombre===it.d);if(p)p.stock=Math.max(0,p.stock-it.c);});
+  const v={id:uid(),fecha:hoy(),clienteId:ventaDraft.clienteId,items:ventaDraft.items,pago:ventaDraft.pago};
+  DB.ventas.push(v);
+  if(v.pago==='crédito'&&v.clienteId){
+    DB.cobros.push({id:uid(),clienteId:v.clienteId,concepto:'Venta a crédito',monto:totalVenta(v),emision:hoy(),vence:diasAdelante(30),estado:'pendiente'});
+  }
+  save();closeModal();vVentas();
+}
+function delVenta(id){if(confirm('¿Eliminar venta? (no repone stock)')){DB.ventas=DB.ventas.filter(v=>v.id!==id);save();vVentas();}}
+function exportVentas(){
+  const rows=[['Fecha','Cliente','Pago','Total','Detalle']];
+  DB.ventas.forEach(v=>rows.push([v.fecha,cliente(v.clienteId)?.nombre||'Público general',v.pago,totalVenta(v),v.items.map(i=>i.d+' x'+i.c).join(' | ')]));
+  descargaCSV('ventas.csv',rows);
 }
 
 /* ---------- COBRANZAS ---------- */
