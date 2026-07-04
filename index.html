@@ -83,7 +83,21 @@
   .lineitem{display:grid;grid-template-columns:1fr 90px 120px 120px 34px;gap:8px;align-items:center;margin-bottom:8px}
   .hide{display:none!important}
   @media(max-width:820px){.side{width:64px}.brand b,.brand .tag,.nav button span.t,.side .foot{display:none}.nav button{justify-content:center}.grid2{grid-template-columns:1fr}}
-  @media print{.side,.top,.noprint{display:none!important}.wrap{padding:0}.doc{border:0}}
+  @media print{.side,.top,.playerbar,.noprint{display:none!important}.wrap{padding:0}.doc,.docedit{border:0}}
+  /* RPG player bar */
+  .playerbar{display:flex;align-items:center;gap:16px;padding:10px 24px;background:linear-gradient(90deg,rgba(124,92,255,.16),rgba(34,211,238,.06));border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .playerbar .pchar{font-size:24px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--line);border-radius:12px}
+  .playerbar .xpwrap{flex:1;min-width:180px;max-width:360px}
+  .playerbar .xpbar{height:10px;background:var(--panel2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+  .playerbar .xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .playerbar .pstat{text-align:center;min-width:64px}
+  .playerbar .pstat b{display:block;font-size:16px}
+  /* Documentos */
+  .doctoolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px}
+  .docedit{background:#fff;color:#111827;min-height:440px;border-radius:12px;padding:28px 34px;font-size:15px;line-height:1.6;outline:none}
+  .docedit:focus{outline:2px solid var(--acc)}
+  .docedit h2{margin:.4em 0}
+  .doccard{cursor:pointer}
 </style>
 </head>
 <body>
@@ -98,6 +112,7 @@
       <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
       <button data-v="ventas"><span class="ico">◎</span><span class="t">Ventas / Caja</span></button>
       <button data-v="cobranzas"><span class="ico">◱</span><span class="t">Cobranzas</span></button>
+      <button data-v="documentos"><span class="ico">≣</span><span class="t">Documentos</span></button>
       <button data-v="config"><span class="ico">⚙</span><span class="t">Mi empresa</span></button>
     </nav>
     <div class="foot">Datos guardados en este equipo.<br>Sin cuentas · sin costo.</div>
@@ -108,6 +123,7 @@
       <div><h1 id="ttl">Panel</h1><div class="sub" id="sub">Resumen de tu empresa</div></div>
       <div class="row noprint" id="topActions"></div>
     </div>
+    <div class="playerbar noprint" id="playerbar"></div>
     <div class="wrap" id="view"></div>
   </main>
 </div>
@@ -118,7 +134,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -173,6 +189,9 @@ function seed(){
         {id:uid(),titulo:'Registrar 20 ventas en el día',puntos:80,estado:'completada'},
       ],
     },
+    docs:[
+      {id:uid(),titulo:'Bienvenido a NUMEN',html:'<h2>Tu empresa, ahora un RPG</h2><p>Este es tu <b>procesador de documentos</b> integrado: escribe cotizaciones, actas, procedimientos o propuestas — todo dentro de la misma plataforma, sin salir a Word.</p><p>Cada tarea que completas suma <b>XP</b> y sube el nivel de tu empresa. Revisa tu progreso en la barra de arriba. 🎮</p>',updated:hoy()},
+    ],
     nextNum:1003,
   };
 }
@@ -194,10 +213,11 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,config:vConfig}[VIEW])();
+  ({panel:vPanel,organizacion:vOrg,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,config:vConfig}[VIEW])();
+  renderPlayer();
 }
 
 /* ---------- PANEL ---------- */
@@ -631,6 +651,61 @@ function editMision(){openModal(`<h3>Nueva misión</h3>
 function saveMision(){const t=val('ms_tit');if(!t){alert('Escribe el reto');return;}DB.org.misiones.push({id:uid(),titulo:t,puntos:+val('ms_pts')||0,estado:'pendiente'});save();closeModal();vOrg();}
 function toggleMision(id){const m=DB.org.misiones.find(x=>x.id===id);m.estado=m.estado==='completada'?'pendiente':'completada';save();vOrg();}
 function delMision(id){DB.org.misiones=DB.org.misiones.filter(m=>m.id!==id);save();vOrg();}
+
+/* ---------- DOCUMENTOS (Office · editor) ---------- */
+let openDoc=null;
+function vDocs(){
+  if(openDoc&&DB.docs.some(d=>d.id===openDoc))return renderDocEditor();
+  openDoc=null;
+  ACT.innerHTML=`<button class="btn" onclick="nuevoDoc()">+ Documento</button>`;
+  V.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+  ${DB.docs.slice().reverse().map(d=>`<div class="card doccard" style="padding:16px" onclick="abrirDoc('${d.id}')">
+    <b>${esc(d.titulo||'Sin título')}</b>
+    <div class="mini" style="margin:6px 0;height:48px;overflow:hidden">${esc((d.html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,120))||'Documento vacío'}</div>
+    <div class="row" style="justify-content:space-between;align-items:center"><span class="mini">${fmtFecha(d.updated||'')}</span><button class="btn sm ghost" onclick="event.stopPropagation();delDoc('${d.id}')">🗑</button></div>
+  </div>`).join('')||'<div class="empty">Crea tu primer documento.</div>'}
+  </div>`;
+}
+function renderDocEditor(){
+  const d=DB.docs.find(x=>x.id===openDoc);
+  ACT.innerHTML=`<button class="btn ghost" onclick="cerrarDoc()">← Volver a documentos</button>`;
+  V.innerHTML=`
+  <input id="doc_tit" value="${esc(d.titulo)}" style="font-size:20px;font-weight:700;margin-bottom:12px;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0" oninput="d_titulo(this.value)">
+  <div class="doctoolbar">
+    <button class="btn sm ghost" onmousedown="fmt(event,'bold')" title="Negrita"><b>B</b></button>
+    <button class="btn sm ghost" onmousedown="fmt(event,'italic')" title="Cursiva"><i>I</i></button>
+    <button class="btn sm ghost" onmousedown="fmt(event,'underline')" title="Subrayado"><u>U</u></button>
+    <button class="btn sm ghost" onmousedown="fmt(event,'formatBlock','H2')">Título</button>
+    <button class="btn sm ghost" onmousedown="fmt(event,'insertUnorderedList')">• Lista</button>
+    <button class="btn sm ghost" onmousedown="fmt(event,'insertOrderedList')">1. Lista</button>
+    <span class="spacer"></span><button class="btn sm ghost" onclick="window.print()">Imprimir / PDF</button>
+  </div>
+  <div id="doc_body" class="docedit" contenteditable="true" oninput="d_body(this.innerHTML)">${d.html||''}</div>
+  <div class="mini" style="margin-top:8px">Se guarda solo mientras escribes.</div>`;
+}
+function fmt(e,cmd,v){e.preventDefault();document.execCommand(cmd,false,v||null);d_body(document.getElementById('doc_body').innerHTML);}
+function d_titulo(v){const d=DB.docs.find(x=>x.id===openDoc);d.titulo=v;d.updated=hoy();save();}
+function d_body(h){const d=DB.docs.find(x=>x.id===openDoc);d.html=h;d.updated=hoy();save();}
+function nuevoDoc(){const d={id:uid(),titulo:'Documento sin título',html:'',updated:hoy()};DB.docs.push(d);save();openDoc=d.id;vDocs();}
+function abrirDoc(id){openDoc=id;vDocs();}
+function cerrarDoc(){openDoc=null;vDocs();}
+function delDoc(id){if(confirm('¿Eliminar documento?')){DB.docs=DB.docs.filter(d=>d.id!==id);if(openDoc===id)openDoc=null;save();vDocs();}}
+
+/* ---------- JUGADOR (capa RPG global) ---------- */
+function renderPlayer(){
+  const bar=document.getElementById('playerbar');if(!bar)return;
+  const O=DB.org;
+  const xp=O.cargos.reduce((a,c)=>a+(c.puntos||0),0)+O.misiones.filter(m=>m.estado==='completada').reduce((a,m)=>a+(m.puntos||0),0);
+  const nivel=Math.floor(xp/500)+1;const enNivel=xp%500;const pct=Math.round(enNivel/5);
+  const rangos=['Aprendiz','Operador','Estratega','Comandante','Maestro','Leyenda'];
+  const rango=rangos[Math.min(nivel-1,rangos.length-1)];
+  const pend=O.misiones.filter(m=>m.estado!=='completada').length;
+  bar.innerHTML=`<div class="pchar">🎮</div>
+  <div style="min-width:150px"><b>${esc(DB.empresa.nombre||'Tu empresa')}</b><div class="mini">${rango} · Nivel ${nivel}</div></div>
+  <div class="xpwrap"><div class="xpbar"><i style="width:${pct}%"></i></div><div class="mini" style="margin-top:3px">${NUM.format(enNivel)} / 500 XP → Nivel ${nivel+1}</div></div>
+  <div class="pstat"><b>${NUM.format(xp)}</b><span class="mini">XP total</span></div>
+  <div class="pstat"><b>${pend}</b><span class="mini">misiones</span></div>`;
+}
 
 /* ---------- MI EMPRESA ---------- */
 function vConfig(){
