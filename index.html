@@ -89,9 +89,10 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><b>NUMEN</b> <span class="tag">Suite · gestión de empresa</span></div>
+    <div class="brand"><b>NUMEN</b> <span class="tag">Plataforma de negocios · IA · Lean</span></div>
     <nav class="nav" id="nav">
       <button data-v="panel" class="on"><span class="ico">▤</span><span class="t">Panel</span></button>
+      <button data-v="organizacion"><span class="ico">⬢</span><span class="t">Organización · IA</span></button>
       <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
       <button data-v="cotizaciones"><span class="ico">◈</span><span class="t">Cotizaciones</span></button>
       <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
@@ -119,11 +120,14 @@ const KEY='numen_suite_v1';
 const DB=load();
 ['clientes','productos','cotizaciones','cobros','ventas'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
+if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
+['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.v)return r;}catch(e){}return seed();}
 function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function seed(){
   const c1=uid(),c2=uid(),c3=uid();
+  const o1=uid(),o2=uid(),o3=uid(),o4=uid();
   return {v:1,
     empresa:{nombre:'Mi Empresa SpA',rut:'',giro:'',dir:'',fono:'',mail:'',logo:''},
     clientes:[
@@ -150,6 +154,25 @@ function seed(){
       {id:uid(),fecha:hoy(),clienteId:'',pago:'efectivo',items:[{d:'Pintura látex 1gl blanco',c:2,p:18990},{d:'Guante cabritilla',c:3,p:3490}]},
       {id:uid(),fecha:hoy(),clienteId:c1,pago:'tarjeta',items:[{d:'Tornillo autoperforante 8x1',c:100,p:120}]},
     ],
+    org:{
+      cargos:[
+        {id:o1,nombre:'Gerencia General',persona:'Tú',agente:'Copiloto de dirección: resume el estado de toda la empresa y alerta desviaciones cada mañana',objetivo:'Crecer 20% y bajar costos 15%',nivel:5,puntos:1240,racha:12},
+        {id:o2,nombre:'Ventas',persona:'Sin asignar',agente:'Vendedor IA: responde consultas 24/7, arma cotizaciones y agenda visitas',objetivo:'Convertir 30% de los prospectos',nivel:3,puntos:640,racha:5},
+        {id:o3,nombre:'Cobranzas',persona:'Sin asignar',agente:'Gestor de cobranza: detecta vencidos y envía recordatorios por WhatsApp solo',objetivo:'Bajar la mora a menos de 10 días',nivel:2,puntos:320,racha:3},
+        {id:o4,nombre:'Bodega / Abastecimiento',persona:'Sin asignar',agente:'Reponedor IA: avisa quiebres de stock y sugiere pedidos a proveedores',objetivo:'Cero quiebres de stock',nivel:2,puntos:280,racha:2},
+      ],
+      mejoras:[
+        {id:uid(),cargoId:o3,titulo:'Automatizar recordatorios de cobro por WhatsApp',tipo:'kaizen',ahorro:180000,estado:'implementada'},
+        {id:uid(),cargoId:o2,titulo:'Eliminar el re-tecleo de cotización a venta',tipo:'desperdicio',ahorro:120000,estado:'en curso'},
+        {id:uid(),cargoId:o4,titulo:'Alertas de stock mínimo automáticas',tipo:'kaizen',ahorro:90000,estado:'implementada'},
+        {id:uid(),cargoId:o1,titulo:'Reporte diario automático (elimina la reunión de estado)',tipo:'desperdicio',ahorro:240000,estado:'propuesta'},
+      ],
+      misiones:[
+        {id:uid(),titulo:'Cerrar 5 cotizaciones esta semana',puntos:100,estado:'pendiente'},
+        {id:uid(),titulo:'Dejar cobranzas en cero vencido',puntos:150,estado:'pendiente'},
+        {id:uid(),titulo:'Registrar 20 ventas en el día',puntos:80,estado:'completada'},
+      ],
+    },
     nextNum:1003,
   };
 }
@@ -171,10 +194,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,config:vConfig}[VIEW])();
+  ({panel:vPanel,organizacion:vOrg,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,config:vConfig}[VIEW])();
 }
 
 /* ---------- PANEL ---------- */
@@ -517,6 +540,97 @@ function exportCobros(){
   DB.cobros.forEach(c=>rows.push([cliente(c.clienteId)?.nombre||'',c.concepto,c.vence,c.monto,c.estado,Math.max(0,diasVencido(c.vence))]));
   descargaCSV('cobranzas.csv',rows);
 }
+
+/* ---------- ORGANIZACIÓN (IA · lean · gamificación) ---------- */
+function vOrg(){
+  const O=DB.org;
+  ACT.innerHTML=`<button class="btn ghost" onclick="editMejora()">+ Mejora</button><button class="btn" onclick="editCargo()">+ Cargo</button>`;
+  const ahorroMes=O.mejoras.reduce((a,m)=>a+(m.estado==='implementada'?m.ahorro:0),0);
+  const potencial=O.mejoras.reduce((a,m)=>a+m.ahorro,0);
+  const implementadas=O.mejoras.filter(m=>m.estado==='implementada').length;
+  const desperdicios=O.mejoras.filter(m=>m.tipo==='desperdicio').length;
+  const puntos=O.cargos.reduce((a,c)=>a+(c.puntos||0),0);
+  V.innerHTML=`<div class="kpis">
+    ${kpi('Ahorro/mes logrado',clp(ahorroMes),'con mejoras implementadas')}
+    ${kpi('Potencial total',clp(potencial),'si aplicas todo')}
+    ${kpi('Mejoras implementadas',implementadas,desperdicios+' desperdicios detectados')}
+    ${kpi('Energía del equipo',NUM.format(puntos)+' pts','gamificación neurocientífica')}
+  </div>
+  <h3 style="margin:6px 0 12px">Organigrama con IA <span class="mini">— cada cargo tiene un agente que hace el trabajo repetitivo</span></h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:26px">
+  ${O.cargos.map(c=>`<div class="card" style="padding:16px">
+    <div class="row" style="justify-content:space-between;align-items:flex-start"><b>${esc(c.nombre)}</b><span class="pill mut">Nv ${c.nivel} · ${NUM.format(c.puntos)} pts${c.racha?' · 🔥'+c.racha:''}</span></div>
+    <div class="mini" style="margin:2px 0 10px">${esc(c.persona||'Sin asignar')}</div>
+    <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px"><b style="color:var(--acc2)">🤖 Agente IA</b><br>${esc(c.agente||'—')}</div>
+    ${c.objetivo?`<div class="mini" style="margin-top:8px">🎯 ${esc(c.objetivo)}</div>`:''}
+    <div class="row" style="margin-top:10px"><button class="btn sm ghost" onclick="editCargo('${c.id}')">Editar</button><button class="btn sm ghost" onclick="delCargo('${c.id}')">🗑</button></div>
+  </div>`).join('')||'<div class="empty">Agrega los cargos de tu empresa.</div>'}
+  </div>
+  <h3 style="margin:6px 0 12px">Mejora continua · Lean / Kaizen <span class="mini">— eliminar desperdicio y bajar costos</span></h3>
+  <div class="card" style="margin-bottom:26px"><table><thead><tr><th>Mejora</th><th>Área</th><th>Tipo</th><th class="num">Ahorro/mes</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${O.mejoras.map(m=>{const cg=O.cargos.find(x=>x.id===m.cargoId);const est={propuesta:'ghost','en curso':'warn',implementada:'ok'}[m.estado]||'ghost';return`<tr>
+    <td>${esc(m.titulo)}</td><td class="mini">${esc(cg?.nombre||'—')}</td>
+    <td><span class="pill ${m.tipo==='desperdicio'?'bad':'ok'}">${m.tipo}</span></td>
+    <td class="num">${clp(m.ahorro)}</td>
+    <td><button class="btn sm ${est}" onclick="cicloMejora('${m.id}')">${m.estado} ↻</button></td>
+    <td class="row"><button class="btn sm ghost" onclick="editMejora('${m.id}')">✎</button><button class="btn sm ghost" onclick="delMejora('${m.id}')">🗑</button></td>
+  </tr>`;}).join('')||'<tr><td colspan="6" class="empty">Sin mejoras registradas.</td></tr>'}
+  </tbody></table></div>
+  <h3 style="margin:6px 0 12px">Misiones del equipo <span class="mini">— gamificación: retos que enfocan la energía</span></h3>
+  <div class="card"><table><tbody>
+  ${O.misiones.map(m=>`<tr>
+    <td style="width:38px"><input type="checkbox" ${m.estado==='completada'?'checked':''} onchange="toggleMision('${m.id}')" style="width:auto"></td>
+    <td style="${m.estado==='completada'?'opacity:.5;text-decoration:line-through':''}">${esc(m.titulo)}</td>
+    <td class="num"><span class="pill ${m.estado==='completada'?'ok':'warn'}">+${m.puntos} pts</span></td>
+    <td style="width:38px"><button class="btn sm ghost" onclick="delMision('${m.id}')">🗑</button></td>
+  </tr>`).join('')||'<tr><td class="empty">Sin misiones.</td></tr>'}
+  </tbody></table></div>
+  <div class="row" style="margin-top:10px"><button class="btn ghost sm" onclick="editMision()">+ Misión</button></div>`;
+}
+function editCargo(id){
+  const c=id?DB.org.cargos.find(x=>x.id===id):{id:'',nombre:'',persona:'',agente:'',objetivo:'',nivel:1,puntos:0,racha:0};
+  openModal(`<h3>${id?'Editar':'Nuevo'} cargo</h3>
+  <div class="grid2"><div class="field"><label>Cargo</label><input id="o_nom" value="${esc(c.nombre)}"></div>
+  <div class="field"><label>Persona a cargo</label><input id="o_per" value="${esc(c.persona)}"></div></div>
+  <div class="field"><label>Qué hace el agente de IA</label><textarea id="o_age" rows="2">${esc(c.agente)}</textarea></div>
+  <div class="field"><label>Objetivo</label><input id="o_obj" value="${esc(c.objetivo)}"></div>
+  <div class="grid2"><div class="field"><label>Nivel</label><input id="o_niv" type="number" value="${c.nivel}"></div>
+  <div class="field"><label>Puntos</label><input id="o_pts" type="number" value="${c.puntos}"></div></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveCargo('${c.id}')">Guardar</button></div>`);
+}
+function saveCargo(id){
+  const o={id:id||uid(),nombre:val('o_nom'),persona:val('o_per'),agente:val('o_age'),objetivo:val('o_obj'),nivel:+val('o_niv')||1,puntos:+val('o_pts')||0,racha:id?DB.org.cargos.find(x=>x.id===id).racha:0};
+  if(!o.nombre){alert('Ponle nombre al cargo');return;}
+  if(id){Object.assign(DB.org.cargos.find(x=>x.id===id),o);}else{DB.org.cargos.push(o);}
+  save();closeModal();vOrg();
+}
+function delCargo(id){if(confirm('¿Eliminar cargo?')){DB.org.cargos=DB.org.cargos.filter(c=>c.id!==id);save();vOrg();}}
+function editMejora(id){
+  const m=id?DB.org.mejoras.find(x=>x.id===id):{id:'',titulo:'',cargoId:DB.org.cargos[0]?.id||'',tipo:'kaizen',ahorro:0,estado:'propuesta'};
+  const opts=DB.org.cargos.map(c=>`<option value="${c.id}" ${c.id===m.cargoId?'selected':''}>${esc(c.nombre)}</option>`).join('');
+  openModal(`<h3>${id?'Editar':'Nueva'} mejora</h3>
+  <div class="field"><label>Descripción</label><input id="m_tit" value="${esc(m.titulo)}"></div>
+  <div class="grid2"><div class="field"><label>Área / cargo</label><select id="m_car">${opts||'<option value="">—</option>'}</select></div>
+  <div class="field"><label>Tipo</label><select id="m_tip"><option ${m.tipo==='kaizen'?'selected':''}>kaizen</option><option ${m.tipo==='desperdicio'?'selected':''}>desperdicio</option></select></div></div>
+  <div class="grid2"><div class="field"><label>Ahorro estimado/mes (CLP)</label><input id="m_aho" type="number" value="${m.ahorro}"></div>
+  <div class="field"><label>Estado</label><select id="m_est">${['propuesta','en curso','implementada'].map(e=>`<option ${m.estado===e?'selected':''}>${e}</option>`).join('')}</select></div></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMejora('${m.id}')">Guardar</button></div>`);
+}
+function saveMejora(id){
+  const o={id:id||uid(),titulo:val('m_tit'),cargoId:val('m_car'),tipo:val('m_tip'),ahorro:+val('m_aho')||0,estado:val('m_est')};
+  if(!o.titulo){alert('Describe la mejora');return;}
+  if(id){Object.assign(DB.org.mejoras.find(x=>x.id===id),o);}else{DB.org.mejoras.push(o);}
+  save();closeModal();vOrg();
+}
+function cicloMejora(id){const m=DB.org.mejoras.find(x=>x.id===id);const s=['propuesta','en curso','implementada'];m.estado=s[(s.indexOf(m.estado)+1)%3];save();vOrg();}
+function delMejora(id){if(confirm('¿Eliminar mejora?')){DB.org.mejoras=DB.org.mejoras.filter(m=>m.id!==id);save();vOrg();}}
+function editMision(){openModal(`<h3>Nueva misión</h3>
+  <div class="field"><label>Reto</label><input id="ms_tit" placeholder="Ej: cerrar 5 ventas esta semana"></div>
+  <div class="field"><label>Puntos</label><input id="ms_pts" type="number" value="50"></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMision()">Guardar</button></div>`);}
+function saveMision(){const t=val('ms_tit');if(!t){alert('Escribe el reto');return;}DB.org.misiones.push({id:uid(),titulo:t,puntos:+val('ms_pts')||0,estado:'pendiente'});save();closeModal();vOrg();}
+function toggleMision(id){const m=DB.org.misiones.find(x=>x.id===id);m.estado=m.estado==='completada'?'pendiente':'completada';save();vOrg();}
+function delMision(id){DB.org.misiones=DB.org.misiones.filter(m=>m.id!==id);save();vOrg();}
 
 /* ---------- MI EMPRESA ---------- */
 function vConfig(){
