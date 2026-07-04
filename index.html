@@ -107,6 +107,24 @@
   table.hoja input{width:120px;border:0;background:transparent;color:var(--tx);padding:5px 8px;font-size:13px;outline:none;font-family:inherit}
   table.hoja input:focus{outline:2px solid var(--acc);background:#0b1220}
   table.hoja input.fx{color:#34d399}
+  .chatgrid{display:grid;grid-template-columns:300px 1fr;gap:14px;height:calc(100vh - 210px);min-height:420px}
+  .chatlist{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  .chatitem{display:flex;gap:10px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .chatitem:hover{background:var(--panel2)}
+  .chatitem.on{background:var(--panel2);border-left:3px solid var(--acc)}
+  .chatava{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:var(--acc);color:#04121f;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .chatava.ia{background:#1e293b;color:#e2e8f0}
+  .chatmain{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .chathead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .chatmsgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .msg{display:flex;gap:10px;max-width:78%}
+  .msg.mine{align-self:flex-end;flex-direction:row-reverse}
+  .bubble{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:9px 13px;font-size:14px;line-height:1.45}
+  .msg.mine .bubble{background:#0e2a3f;border-color:#164e63}
+  .chatgrid .pill{background:var(--panel2);color:var(--mut)}
+  .chatgrid .pill.ia{background:#1e293b;color:#93c5fd}
+  .chatbox{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  @media(max-width:820px){.chatgrid{grid-template-columns:1fr;height:auto}.chatlist{max-height:220px}.chatmain{height:60vh}.msg{max-width:92%}}
 </style>
 </head>
 <body>
@@ -124,6 +142,7 @@
       <button data-v="cobranzas"><span class="ico">◱</span><span class="t">Cobranzas</span></button>
       <button data-v="documentos"><span class="ico">≣</span><span class="t">Documentos</span></button>
       <button data-v="hojas"><span class="ico">▥</span><span class="t">Hojas de cálculo</span></button>
+      <button data-v="mensajes"><span class="ico">✉</span><span class="t">Mensajes</span></button>
       <button data-v="config"><span class="ico">⚙</span><span class="t">Mi empresa</span></button>
     </nav>
     <div class="foot">Datos guardados en este equipo.<br>Sin cuentas · sin costo.</div>
@@ -145,7 +164,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas','docs','hojas'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -220,6 +239,18 @@ function seed(){
         {id:uid(),titulo:'El trabajo como juego: gamificación neurocientífica',contenido:'El cerebro aprende y se motiva con progreso visible, recompensa y reto a la medida. Por eso toda esta plataforma es un RPG: cada avance se ve, suma XP y sube tu nivel.',puntos:70,hecha:false},
       ]},
     ]},
+    mensajes:[
+      {id:uid(),tema:'Reporte de cobranzas de hoy',area:'Cobranzas',updated:hoy(),mensajes:[
+        {de:'Gestor de cobranza',ia:true,texto:'Detecté 3 clientes con pagos vencidos por $840.000 en total. Ya envié recordatorios por WhatsApp a los tres. Uno respondió que paga mañana.',fecha:hoy()},
+        {de:'Tú',ia:false,texto:'Perfecto. Si mañana no paga, escalámelo.',fecha:hoy()},
+      ]},
+      {id:uid(),tema:'Quiebre de stock',area:'Bodega / Abastecimiento',updated:hoy(),mensajes:[
+        {de:'Reponedor IA',ia:true,texto:'Quedan 4 unidades de "Cemento 25kg", bajo el mínimo. Sugiero pedido de 50 unidades al proveedor habitual. ¿Lo genero?',fecha:hoy()},
+      ]},
+      {id:uid(),tema:'Bienvenida al equipo',area:'General',updated:hoy(),mensajes:[
+        {de:'Gerencia General',ia:false,texto:'Bienvenidos a la nueva plataforma. Todo lo importante lo conversamos acá y queda registrado. Los agentes de IA también reportan por este canal.',fecha:hoy()},
+      ]},
+    ],
     hojas:[
       {id:uid(),titulo:'Presupuesto mensual',updated:hoy(),rows:12,cols:6,cells:{
         A1:'Concepto',B1:'Monto mensual',
@@ -252,10 +283,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,config:vConfig}[VIEW])();
+  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,config:vConfig}[VIEW])();
   renderPlayer();
 }
 
@@ -851,6 +882,58 @@ function nuevaHoja(){const h={id:uid(),titulo:'Hoja sin título',updated:hoy(),r
 function abrirHoja(id){openHoja=id;vHojas();}
 function cerrarHoja(){openHoja=null;vHojas();}
 function delHoja(id){if(confirm('¿Eliminar hoja?')){DB.hojas=DB.hojas.filter(h=>h.id!==id);if(openHoja===id)openHoja=null;save();vHojas();}}
+
+/* ---------- MENSAJES (chat interno tipo Teams) ---------- */
+let openHilo=null;
+function iniciales(n){return(n||'?').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+function ultimoMsg(h){return h.mensajes&&h.mensajes.length?h.mensajes[h.mensajes.length-1]:null;}
+function vMensajes(){
+  ACT.innerHTML=`<button class="btn" onclick="nuevoHilo()">+ Conversación</button>`;
+  const hilos=DB.mensajes.slice().sort((a,b)=>(b.updated||'').localeCompare(a.updated||''));
+  if(!openHilo&&hilos[0])openHilo=hilos[0].id;
+  const h=DB.mensajes.find(x=>x.id===openHilo);
+  V.innerHTML=`<div class="chatgrid">
+    <div class="chatlist">
+      ${hilos.map(t=>{const u=ultimoMsg(t);return`<div class="chatitem ${t.id===openHilo?'on':''}" onclick="abrirHilo('${t.id}')">
+        <div class="chatava">${esc(iniciales(t.area==='General'?'GG':t.area))}</div>
+        <div style="min-width:0;flex:1">
+          <div class="row" style="justify-content:space-between;gap:6px"><b style="font-size:14px">${esc(t.tema)}</b><span class="mini">${fmtFecha(t.updated||'')}</span></div>
+          <div class="mini" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.area!=='General'?'<span class="pill">'+esc(t.area)+'</span> ':''}${u?(u.ia?'🤖 ':'')+esc(u.texto.slice(0,48)):'Sin mensajes'}</div>
+        </div></div>`;}).join('')||'<div class="empty">Sin conversaciones.</div>'}
+    </div>
+    <div class="chatmain">${h?renderHilo(h):'<div class="empty">Elige o crea una conversación.</div>'}</div>
+  </div>`;
+  const sc=document.getElementById('chatscroll');if(sc)sc.scrollTop=sc.scrollHeight;
+}
+function renderHilo(h){
+  const cargos=DB.org.cargos||[];
+  const opts=['Tú',...cargos.map(c=>c.nombre),...cargos.map(c=>c.agente?c.nombre+' · agente IA':null).filter(Boolean)];
+  return `<div class="chathead"><div><b>${esc(h.tema)}</b> ${h.area!=='General'?'<span class="pill">'+esc(h.area)+'</span>':''}<div class="mini">${h.mensajes.length} mensajes</div></div>
+    <button class="btn sm ghost" onclick="delHilo('${h.id}')">🗑</button></div>
+  <div class="chatmsgs" id="chatscroll">
+    ${h.mensajes.map(m=>`<div class="msg ${m.de==='Tú'?'mine':''}">
+      <div class="chatava ${m.ia?'ia':''}">${m.ia?'🤖':esc(iniciales(m.de))}</div>
+      <div class="bubble"><div class="mini" style="margin-bottom:2px">${esc(m.de)}${m.ia?' <span class="pill ia">IA</span>':''} · ${fmtFecha(m.fecha)}</div>${esc(m.texto)}</div>
+    </div>`).join('')}
+  </div>
+  <div class="chatbox">
+    <select id="msg_de" class="inp" style="max-width:180px">${['Tú',...cargos.map(c=>c.nombre),...cargos.filter(c=>c.agente).map(c=>'🤖 '+c.nombre)].map(o=>`<option>${esc(o)}</option>`).join('')}</select>
+    <input id="msg_txt" class="inp" placeholder="Escribe un mensaje…" style="flex:1" onkeydown="if(event.key==='Enter')enviarMsg()">
+    <button class="btn" onclick="enviarMsg()">Enviar</button>
+  </div>`;
+}
+function enviarMsg(){
+  const h=DB.mensajes.find(x=>x.id===openHilo);if(!h)return;
+  const txt=document.getElementById('msg_txt').value.trim();if(!txt)return;
+  let de=document.getElementById('msg_de').value;const ia=de.startsWith('🤖 ');if(ia)de=de.slice(2).trim();
+  h.mensajes.push({de,ia,texto:txt,fecha:hoy()});h.updated=hoy();save();vMensajes();
+}
+function nuevoHilo(){
+  const tema=prompt('Tema de la conversación:');if(!tema)return;
+  const h={id:uid(),tema,area:'General',updated:hoy(),mensajes:[]};DB.mensajes.push(h);save();openHilo=h.id;vMensajes();
+}
+function abrirHilo(id){openHilo=id;vMensajes();}
+function delHilo(id){if(confirm('¿Eliminar conversación?')){DB.mensajes=DB.mensajes.filter(h=>h.id!==id);if(openHilo===id)openHilo=null;save();vMensajes();}}
 
 /* ---------- JUGADOR (capa RPG global) ---------- */
 function renderPlayer(){
