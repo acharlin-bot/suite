@@ -143,6 +143,7 @@
       <button data-v="documentos"><span class="ico">≣</span><span class="t">Documentos</span></button>
       <button data-v="hojas"><span class="ico">▥</span><span class="t">Hojas de cálculo</span></button>
       <button data-v="mensajes"><span class="ico">✉</span><span class="t">Mensajes</span></button>
+      <button data-v="wiki"><span class="ico">◫</span><span class="t">Base de conocimiento</span></button>
       <button data-v="config"><span class="ico">⚙</span><span class="t">Mi empresa</span></button>
     </nav>
     <div class="foot">Datos guardados en este equipo.<br>Sin cuentas · sin costo.</div>
@@ -164,7 +165,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -239,6 +240,11 @@ function seed(){
         {id:uid(),titulo:'El trabajo como juego: gamificación neurocientífica',contenido:'El cerebro aprende y se motiva con progreso visible, recompensa y reto a la medida. Por eso toda esta plataforma es un RPG: cada avance se ve, suma XP y sube tu nivel.',puntos:70,hecha:false},
       ]},
     ]},
+    wiki:[
+      {id:uid(),titulo:'Cómo atender a un cliente nuevo',categoria:'Ventas',updated:hoy(),contenido:'<h2>Objetivo</h2><p>Que todo cliente nuevo reciba la misma experiencia, sin importar quién lo atienda.</p><h2>Pasos</h2><ol><li>Saludar y preguntar qué necesita.</li><li>Registrar sus datos en <b>Clientes</b>.</li><li>Armar la cotización en <b>Cotizaciones</b> (siempre con IVA).</li><li>Enviar por WhatsApp y hacer seguimiento a los 2 días.</li></ol><p>El <b>Vendedor IA</b> puede hacer los pasos 1 a 3 solo si el cliente escribe fuera de horario.</p>'},
+      {id:uid(),titulo:'Política de cobranza',categoria:'Finanzas',updated:hoy(),contenido:'<h2>Regla</h2><p>Ningún cliente supera los <b>10 días</b> de mora sin gestión.</p><ul><li>Día 1 de atraso: recordatorio automático por WhatsApp (lo hace el agente).</li><li>Día 5: llamado personal.</li><li>Día 10: se frena nuevo crédito y se escala a Gerencia.</li></ul>'},
+      {id:uid(),titulo:'Qué hacer ante un quiebre de stock',categoria:'Operaciones',updated:hoy(),contenido:'<h2>Prevención</h2><p>El <b>Reponedor IA</b> avisa cuando un producto baja del mínimo. No esperar a que llegue a cero.</p><h2>Acción</h2><ol><li>Revisar la alerta en <b>Inventario</b> o en <b>Mensajes</b>.</li><li>Confirmar el pedido sugerido al proveedor.</li><li>Actualizar el stock al recibir la mercadería.</li></ol>'},
+    ],
     mensajes:[
       {id:uid(),tema:'Reporte de cobranzas de hoy',area:'Cobranzas',updated:hoy(),mensajes:[
         {de:'Gestor de cobranza',ia:true,texto:'Detecté 3 clientes con pagos vencidos por $840.000 en total. Ya envié recordatorios por WhatsApp a los tres. Uno respondió que paga mañana.',fecha:hoy()},
@@ -283,10 +289,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,config:vConfig}[VIEW])();
+  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
   renderPlayer();
 }
 
@@ -934,6 +940,68 @@ function nuevoHilo(){
 }
 function abrirHilo(id){openHilo=id;vMensajes();}
 function delHilo(id){if(confirm('¿Eliminar conversación?')){DB.mensajes=DB.mensajes.filter(h=>h.id!==id);if(openHilo===id)openHilo=null;save();vMensajes();}}
+
+/* ---------- BASE DE CONOCIMIENTO (wiki tipo SharePoint) ---------- */
+let openWiki=null,wikiEdit=false,wikiQ='',wikiCat='';
+function textoPlano(html){return(html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
+function vWiki(){
+  if(openWiki&&DB.wiki.some(a=>a.id===openWiki))return renderWikiArt();
+  openWiki=null;
+  ACT.innerHTML=`<button class="btn" onclick="nuevoWiki()">+ Artículo</button>`;
+  const cats=[...new Set(DB.wiki.map(a=>a.categoria).filter(Boolean))];
+  const q=wikiQ.toLowerCase();
+  const lista=DB.wiki.filter(a=>(!wikiCat||a.categoria===wikiCat)&&(!q||(a.titulo+' '+textoPlano(a.contenido)+' '+(a.categoria||'')).toLowerCase().includes(q)))
+    .sort((a,b)=>(b.updated||'').localeCompare(a.updated||''));
+  V.innerHTML=`
+  <div class="row" style="gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <input placeholder="🔍 Buscar procedimientos, guías…" value="${esc(wikiQ)}" oninput="wikiQ=this.value;vWiki()" style="max-width:360px">
+    <select onchange="wikiCat=this.value;vWiki()" style="max-width:200px">
+      <option value="">Todas las categorías</option>
+      ${cats.map(c=>`<option ${c===wikiCat?'selected':''}>${esc(c)}</option>`).join('')}
+    </select>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+  ${lista.map(a=>`<div class="card doccard" style="padding:16px" onclick="abrirWiki('${a.id}')">
+    <span class="pill" style="background:var(--panel2);color:var(--acc)">${esc(a.categoria||'General')}</span>
+    <b style="display:block;margin:8px 0 4px">${esc(a.titulo||'Sin título')}</b>
+    <div class="mini" style="height:44px;overflow:hidden">${esc(textoPlano(a.contenido).slice(0,120))}</div>
+    <div class="row" style="justify-content:space-between;align-items:center;margin-top:8px"><span class="mini">${fmtFecha(a.updated||'')}</span><button class="btn sm ghost" onclick="event.stopPropagation();delWiki('${a.id}')">🗑</button></div>
+  </div>`).join('')||'<div class="empty">No hay artículos que coincidan. Crea el primero con “+ Artículo”.</div>'}
+  </div>`;
+}
+function renderWikiArt(){
+  const a=DB.wiki.find(x=>x.id===openWiki);
+  ACT.innerHTML=`<button class="btn ghost" onclick="cerrarWiki()">← Volver</button> ${wikiEdit?`<button class="btn" onclick="wikiEdit=false;vWiki()">✓ Listo</button>`:`<button class="btn ghost" onclick="wikiEdit=true;vWiki()">✎ Editar</button> <button class="btn sm ghost" onclick="window.print()">Imprimir / PDF</button>`}`;
+  if(!wikiEdit){
+    V.innerHTML=`<div style="max-width:760px">
+      <span class="pill" style="background:var(--panel2);color:var(--acc)">${esc(a.categoria||'General')}</span>
+      <h1 style="margin:10px 0 4px">${esc(a.titulo)}</h1>
+      <div class="mini" style="margin-bottom:18px">Actualizado ${fmtFecha(a.updated||'')}</div>
+      <div class="docedit" style="min-height:auto">${a.contenido||'<p>Artículo vacío.</p>'}</div>
+    </div>`;
+    return;
+  }
+  V.innerHTML=`<div style="max-width:760px">
+    <div class="row" style="gap:10px;margin-bottom:10px">
+      <input id="w_tit" value="${esc(a.titulo)}" placeholder="Título" style="flex:1;font-size:18px;font-weight:700" oninput="w_set('titulo',this.value)">
+      <input id="w_cat" value="${esc(a.categoria||'')}" placeholder="Categoría" style="max-width:180px" oninput="w_set('categoria',this.value)">
+    </div>
+    <div class="doctoolbar">
+      <button class="btn sm ghost" onmousedown="wfmt(event,'bold')"><b>B</b></button>
+      <button class="btn sm ghost" onmousedown="wfmt(event,'italic')"><i>I</i></button>
+      <button class="btn sm ghost" onmousedown="wfmt(event,'formatBlock','H2')">Título</button>
+      <button class="btn sm ghost" onmousedown="wfmt(event,'insertUnorderedList')">• Lista</button>
+      <button class="btn sm ghost" onmousedown="wfmt(event,'insertOrderedList')">1. Lista</button>
+    </div>
+    <div id="w_body" class="docedit" contenteditable="true" oninput="w_set('contenido',this.innerHTML)">${a.contenido||''}</div>
+  </div>`;
+}
+function w_set(campo,v){const a=DB.wiki.find(x=>x.id===openWiki);a[campo]=v;a.updated=hoy();save();}
+function wfmt(e,cmd,v){e.preventDefault();document.execCommand(cmd,false,v||null);w_set('contenido',document.getElementById('w_body').innerHTML);}
+function nuevoWiki(){const a={id:uid(),titulo:'Nuevo procedimiento',categoria:'General',contenido:'',updated:hoy()};DB.wiki.push(a);save();openWiki=a.id;wikiEdit=true;vWiki();}
+function abrirWiki(id){openWiki=id;wikiEdit=false;vWiki();}
+function cerrarWiki(){openWiki=null;wikiEdit=false;vWiki();}
+function delWiki(id){if(confirm('¿Eliminar artículo?')){DB.wiki=DB.wiki.filter(a=>a.id!==id);if(openWiki===id)openWiki=null;save();vWiki();}}
 
 /* ---------- JUGADOR (capa RPG global) ---------- */
 function renderPlayer(){
