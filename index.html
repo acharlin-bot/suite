@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NUMEN Suite · Administra tu empresa</title>
+<title>Córtex · by NeuroLean · El cerebro operativo de tu empresa</title>
 <style>
   :root{
     --bg:#0f1117; --panel:#161a23; --panel2:#1c212d; --line:#262c3a;
@@ -130,7 +130,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><b>NUMEN</b> <span class="tag">Plataforma-juego · IA · Aprendizaje · Lean</span></div>
+    <div class="brand"><b>Córtex</b> <span class="tag">by NeuroLean · el cerebro operativo de tu empresa</span></div>
     <nav class="nav" id="nav">
       <button data-v="panel" class="on"><span class="ico">▤</span><span class="t">Panel</span></button>
       <button data-v="organizacion"><span class="ico">⬢</span><span class="t">Organización · IA</span></button>
@@ -223,7 +223,7 @@ function seed(){
       ],
     },
     docs:[
-      {id:uid(),titulo:'Bienvenido a NUMEN',html:'<h2>Tu empresa, ahora un RPG</h2><p>Este es tu <b>procesador de documentos</b> integrado: escribe cotizaciones, actas, procedimientos o propuestas — todo dentro de la misma plataforma, sin salir a Word.</p><p>Cada tarea que completas suma <b>XP</b> y sube el nivel de tu empresa. Revisa tu progreso en la barra de arriba. 🎮</p>',updated:hoy()},
+      {id:uid(),titulo:'Bienvenido a Córtex',html:'<h2>Tu empresa, ahora un RPG</h2><p>Este es tu <b>procesador de documentos</b> integrado: escribe cotizaciones, actas, procedimientos o propuestas — todo dentro de la misma plataforma, sin salir a Word.</p><p>Cada tarea que completas suma <b>XP</b> y sube el nivel de tu empresa. Revisa tu progreso en la barra de arriba. 🎮</p>',updated:hoy()},
     ],
     academia:{rutas:[
       {id:uid(),titulo:'Fundamentos Lean',desc:'Elimina desperdicio y mejora continua',lecciones:[
@@ -1041,7 +1041,7 @@ function vConfig(){
 }
 function subeLogo(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{DB.empresa.logo=e.target.result;save();vConfig();};r.readAsDataURL(f);}
 function saveEmpresa(){Object.assign(DB.empresa,{nombre:val('e_nom'),rut:val('e_rut'),giro:val('e_giro'),dir:val('e_dir'),fono:val('e_fono'),mail:val('e_mail')});save();alert('Guardado ✓');}
-function backupJSON(){const b=new Blob([JSON.stringify(DB)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='numen-suite-respaldo.json';a.click();}
+function backupJSON(){const b=new Blob([JSON.stringify(DB)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cortex-respaldo.json';a.click();}
 function restoreJSON(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.v)throw 0;localStorage.setItem(KEY,e.target.result);location.reload();}catch(_){alert('Archivo no válido');}};r.readAsText(f);}
 
 /* ---------- helpers UI ---------- */
