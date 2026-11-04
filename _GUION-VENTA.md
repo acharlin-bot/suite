@@ -8,6 +8,10 @@
 
 ## 1. Lista de 20 empresas objetivo (plantilla)
 
+> Se lleva en la app: módulo **Embudo comercial** de `index.html` (meta 20, etapas,
+> próximo contacto, WhatsApp con el mensaje B prellenado). La tabla de abajo sirve
+> para armar la lista antes de cargarla.
+
 Criterio: PYME o mediana chilena (industrial, retail o servicios), 10–150
 personas, dueño operativo que sufre el caos en persona.
 
