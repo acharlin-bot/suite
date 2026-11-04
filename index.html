@@ -136,6 +136,7 @@
       <button data-v="organizacion"><span class="ico">⬢</span><span class="t">Organización · IA</span></button>
       <button data-v="academia"><span class="ico">⬟</span><span class="t">Academia</span></button>
       <button data-v="prospeccion"><span class="ico">➚</span><span class="t">Prospección</span></button>
+      <button data-v="licitaciones"><span class="ico">⚖</span><span class="t">Licitaciones</span></button>
       <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
       <button data-v="cotizaciones"><span class="ico">◈</span><span class="t">Cotizaciones</span></button>
       <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
@@ -166,7 +167,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki','prospectos'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki','prospectos','licitaciones'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -290,10 +291,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={prospeccion:['Prospección','Pipeline de ventas · llamadas pendientes · plantillas'],panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
+const META={licitaciones:['Licitaciones','Mercado Público · cierres y cuenta regresiva'],prospeccion:['Prospección','Pipeline de ventas · llamadas pendientes · plantillas'],panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({prospeccion:vProsp,panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
+  ({licitaciones:vLicit,prospeccion:vProsp,panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
   renderPlayer();
 }
 
@@ -310,7 +311,7 @@ const PLANTILLAS={
 let fProsp='todos';
 function pAbierto(p){return p.etapa!=='ganado'&&p.etapa!=='perdido';}
 function vProsp(){
-  ACT.innerHTML=`<button class="btn" onclick="editProsp()">+ Prospecto</button>`;
+  ACT.innerHTML=`<button class="btn ghost" onclick="cargarPendientes()">Cargar llamadas pendientes</button><button class="btn" onclick="editProsp()">+ Prospecto</button>`;
   const L=DB.prospectos, ab=L.filter(pAbierto);
   const venc=ab.filter(p=>p.prox&&p.prox<=hoy());
   const pipe=ab.reduce((a,p)=>a+(+p.monto||0),0), gan=L.filter(p=>p.etapa==='ganado').reduce((a,p)=>a+(+p.monto||0),0);
@@ -349,12 +350,77 @@ function saveProsp(id){
   if(id)Object.assign(DB.prospectos.find(x=>x.id===id),d);else DB.prospectos.push(Object.assign({id:uid()},d));
   save();closeModal();vProsp();
 }
+/* Contactos que ya levantaron la mano, tomados de la bitácora de ventas.
+   Verifica cada teléfono antes de llamar: algunos son el número general de la empresa. */
+const PENDIENTES=[
+ {empresa:'Macromec',contacto:'Alejandro Salinas',fono:'+56 9 6895 5065',etapa:'reunion',accion:'Llamar: pidió coordinar reunión',nota:'Respondió pidiendo llamada. El celular directo va en la imagen de su firma en Gmail; este es el número general del CRM. La fecha la aprueba Juan Manuel.'},
+ {empresa:'Leuchtend',contacto:'',fono:'+56 9 8159 1209',etapa:'reunion',accion:'Llamar: pidió reunión',nota:'Levantó la mano y sigue sin llamada.'},
+ {empresa:'Mainger',contacto:'',fono:'+56 9 7743 2821',etapa:'contactado',accion:'Llamar: pidió llamada',nota:'Pidió llamada el 15 de octubre.'},
+ {empresa:'Racsol',contacto:'Gerente',fono:'+56 9 5668 4266',etapa:'propuesta',accion:'Llamar: pidió valores',nota:'Pidió valores el 8 de octubre; se enviaron el 19 con copia a Juan Manuel, sin respuesta. Lean Training, Coyhaique.'},
+ {empresa:'Vitafoods',contacto:'Vanessa · Desarrollo Organizacional',fono:'',etapa:'contactado',accion:'Escribir / coordinar con Juan Manuel',nota:'Magdalena traspasó la conversación y nadie escribió. Sin teléfono registrado.'},
+];
+function cargarPendientes(){
+  let n=0;
+  PENDIENTES.forEach(p=>{
+    if(DB.prospectos.some(x=>x.empresa.toLowerCase()===p.empresa.toLowerCase()))return;
+    DB.prospectos.push(Object.assign({id:uid(),mail:'',oferta:OFERTAS[0][0],monto:OFERTAS[0][1],prox:hoy()},p));n++;
+  });
+  save();vProsp();
+  alert(n?n+' prospecto(s) cargado(s). Verifica cada teléfono antes de llamar.':'Ya estaban todos cargados.');
+}
 function delProsp(id){if(confirm('¿Eliminar prospecto?')){DB.prospectos=DB.prospectos.filter(x=>x.id!==id);save();vProsp();}}
 function plantilla(id){
   const p=DB.prospectos.find(x=>x.id===id);
   const fill=t=>t.replace(/\{empresa\}/g,p.empresa).replace(/\{contacto\}/g,p.contacto||'');
   openModal(`<h3>Textos para ${esc(p.empresa)}</h3>`+Object.keys(PLANTILLAS).map(k=>`<div class="field"><label>${PLANTILLAS[k].t}</label><textarea id="pl_${k}" rows="5">${esc(fill(PLANTILLAS[k].x))}</textarea><button class="btn sm ghost" onclick="navigator.clipboard.writeText(document.getElementById('pl_${k}').value);this.textContent='Copiado ✓'">Copiar</button></div>`).join('')+`<div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>`);
 }
+
+/* ---------- LICITACIONES ---------- */
+const LEST=['evaluando','preparando','presentada','descartada','adjudicada','no adjudicada'];
+function horasPara(dt){if(!dt)return null;return (new Date(dt)-new Date())/3600000;}
+function regresiva(dt){const h=horasPara(dt);if(h===null)return['—',''];
+  if(h<0)return['cerrada','var(--mut)'];
+  if(h<24)return[`${Math.floor(h)} h`,'var(--bad)'];
+  const d=Math.floor(h/24);return[`${d} día${d===1?'':'s'}`,d<=3?'var(--warn)':''];}
+function vLicit(){
+  ACT.innerHTML=`<button class="btn" onclick="editLicit()">+ Licitación</button>`;
+  const L=DB.licitaciones.slice().sort((a,b)=>(a.cierre||'9999').localeCompare(b.cierre||'9999'));
+  const viva=l=>['evaluando','preparando'].includes(l.estado)&&(horasPara(l.cierre)??1)>0;
+  const act=L.filter(viva), urg=act.filter(l=>(horasPara(l.cierre)??999)<72);
+  V.innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">En carpeta</div><div class="val">${act.length}</div></div>
+    <div class="kpi"><div class="lbl">Cierran en 72 h</div><div class="val" style="color:${urg.length?'var(--bad)':'inherit'}">${urg.length}</div></div>
+    <div class="kpi"><div class="lbl">Monto en juego</div><div class="val">${CLP.format(act.reduce((a,l)=>a+(+l.monto||0),0))}</div></div>
+    <div class="kpi"><div class="lbl">Adjudicadas</div><div class="val">${L.filter(l=>l.estado==='adjudicada').length}</div></div></div>
+  <div class="card"><table><thead><tr><th>Licitación</th><th>Cierra</th><th>Monto</th><th>Estado</th><th>Responsable</th><th></th></tr></thead><tbody>
+  ${L.map(l=>{const[txt,col]=regresiva(l.cierre);const pq=horasPara(l.preguntas);return`<tr>
+    <td><b>${esc(l.nombre)}</b><div class="mini">${esc(l.organismo||'')}${l.id_mp?' · '+esc(l.id_mp):''}${l.link?` · <a href="${esc(l.link)}" target="_blank">ficha</a>`:''}</div>${l.nota?'<div class="mini">'+esc(l.nota)+'</div>':''}</td>
+    <td style="${col?'color:'+col+';font-weight:700':''}">${txt}<div class="mini" style="font-weight:400">${l.cierre?esc(l.cierre.replace('T',' ')):''}${pq!==null&&pq>0?'<br>preguntas en '+Math.floor(pq/24)+' d':''}</div></td>
+    <td>${l.monto?CLP.format(l.monto):'—'}</td>
+    <td><span class="pill ${l.estado==='adjudicada'?'ok':l.estado==='descartada'||l.estado==='no adjudicada'?'bad':'warn'}">${esc(l.estado)}</span></td>
+    <td>${esc(l.resp||'—')}</td>
+    <td class="row"><button class="btn sm ghost" onclick="editLicit('${l.id}')">Editar</button><button class="btn sm ghost" onclick="delLicit('${l.id}')">🗑</button></td></tr>`;}).join('')||'<tr><td colspan="6" class="empty">Sin licitaciones. Agrega las que estás evaluando.</td></tr>'}
+  </tbody></table></div>
+  <div class="mini" style="margin-top:10px">Subir la oferta a Mercado Público es manual: requiere la cuenta de la empresa. Este módulo solo lleva el control de los plazos.</div>`;
+}
+function editLicit(id){
+  const l=id?DB.licitaciones.find(x=>x.id===id):{id:'',nombre:'',organismo:'',id_mp:'',monto:0,cierre:'',preguntas:'',estado:'evaluando',resp:'',link:'',nota:''};
+  openModal(`<h3>${id?'Editar':'Nueva'} licitación</h3>
+  <div class="field"><label>Nombre / objeto</label><input id="l_nom" value="${esc(l.nombre)}"></div>
+  <div class="grid2"><div class="field"><label>Organismo</label><input id="l_org" value="${esc(l.organismo)}"></div><div class="field"><label>ID Mercado Público</label><input id="l_idmp" value="${esc(l.id_mp)}"></div></div>
+  <div class="grid2"><div class="field"><label>Cierre (fecha y hora)</label><input id="l_cie" type="datetime-local" value="${esc(l.cierre)}"></div><div class="field"><label>Cierre de preguntas</label><input id="l_pq" type="datetime-local" value="${esc(l.preguntas)}"></div></div>
+  <div class="grid2"><div class="field"><label>Monto estimado (CLP)</label><input id="l_mon" type="number" value="${l.monto||0}"></div><div class="field"><label>Estado</label><select id="l_est">${LEST.map(e=>`<option ${l.estado===e?'selected':''}>${e}</option>`).join('')}</select></div></div>
+  <div class="grid2"><div class="field"><label>Responsable</label><input id="l_resp" value="${esc(l.resp)}" placeholder="quién decide / quién sube"></div><div class="field"><label>Link a la ficha</label><input id="l_link" value="${esc(l.link)}"></div></div>
+  <div class="field"><label>Nota</label><textarea id="l_nota" rows="2">${esc(l.nota)}</textarea></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveLicit('${l.id}')">Guardar</button></div>`);
+}
+function saveLicit(id){
+  const n=val('l_nom');if(!n){alert('Falta el nombre');return;}
+  const d={nombre:n,organismo:val('l_org'),id_mp:val('l_idmp'),monto:+val('l_mon')||0,cierre:val('l_cie'),preguntas:val('l_pq'),estado:val('l_est'),resp:val('l_resp'),link:val('l_link'),nota:val('l_nota')};
+  if(id)Object.assign(DB.licitaciones.find(x=>x.id===id),d);else DB.licitaciones.push(Object.assign({id:uid()},d));
+  save();closeModal();vLicit();
+}
+function delLicit(id){if(confirm('¿Eliminar licitación?')){DB.licitaciones=DB.licitaciones.filter(x=>x.id!==id);save();vLicit();}}
 
 /* ---------- PANEL ---------- */
 function vPanel(){
@@ -388,6 +454,10 @@ function vPanel(){
 }
 function tareas(){
   const t=[];
+  (DB.licitaciones||[]).filter(l=>['evaluando','preparando'].includes(l.estado)&&(horasPara(l.cierre)??999)>0&&(horasPara(l.cierre)??999)<72)
+    .sort((a,b)=>(a.cierre||'').localeCompare(b.cierre||'')).forEach(l=>t.push({icon:'⚖️',txt:'Decidir licitación: '+esc(l.nombre),det:'cierra en '+regresiva(l.cierre)[0]+(l.resp?' · '+esc(l.resp):''),monto:+l.monto||0,goto:'licitaciones'}));
+  (DB.prospectos||[]).filter(p=>pAbierto(p)&&p.prox&&p.prox<=hoy())
+    .sort((a,b)=>(a.prox||'').localeCompare(b.prox||'')).forEach(p=>t.push({icon:'📞',txt:(p.accion||'Contactar')+': '+esc(p.empresa),det:(p.prox<hoy()?diasVencido(p.prox)+' días esperando':'hoy')+(p.fono?' · '+esc(p.fono):''),monto:+p.monto||0,goto:'prospeccion'}));
   DB.cobros.filter(c=>c.estado==='pendiente'&&diasVencido(c.vence)>0).sort((a,b)=>diasVencido(b.vence)-diasVencido(a.vence)).forEach(c=>t.push({icon:'⏰',txt:'Cobrar a '+(cliente(c.clienteId)?.nombre||'cliente'),det:diasVencido(c.vence)+' días vencido · '+esc(c.concepto),monto:c.monto,goto:'cobranzas'}));
   DB.productos.filter(p=>p.stock<=0).forEach(p=>t.push({icon:'🚫',txt:'Reponer '+esc(p.nombre),det:'sin stock',monto:0,goto:'inventario'}));
   DB.productos.filter(p=>p.stock>0&&p.stock<=p.min).forEach(p=>t.push({icon:'⚠️',txt:'Stock bajo: '+esc(p.nombre),det:p.stock+' unidades (mín '+p.min+')',monto:0,goto:'inventario'}));
