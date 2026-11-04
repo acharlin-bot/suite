@@ -133,6 +133,7 @@
     <div class="brand"><b>Córtex</b> <span class="tag">by NeuroLean · el cerebro operativo de tu empresa</span></div>
     <nav class="nav" id="nav">
       <button data-v="panel" class="on"><span class="ico">▤</span><span class="t">Panel</span></button>
+      <button data-v="indice"><span class="ico">◐</span><span class="t">Índice Lean</span></button>
       <button data-v="organizacion"><span class="ico">⬢</span><span class="t">Organización · IA</span></button>
       <button data-v="academia"><span class="ico">⬟</span><span class="t">Academia</span></button>
       <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
@@ -169,6 +170,8 @@ const DB=load();
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
+if(!DB.indice)DB.indice={evals:[]};
+if(!Array.isArray(DB.indice.evals))DB.indice.evals=[];
 if(!DB.academia)DB.academia={rutas:[]};
 if(!Array.isArray(DB.academia.rutas))DB.academia.rutas=[];
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.v)return r;}catch(e){}return seed();}
@@ -289,10 +292,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],indice:['Índice Lean™','Diagnóstico 0–100 · 8 dimensiones · prueba de ROI'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
+  ({panel:vPanel,indice:vIndice,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
   renderPlayer();
 }
 
@@ -1008,7 +1011,7 @@ function renderPlayer(){
   const bar=document.getElementById('playerbar');if(!bar)return;
   const O=DB.org;
   const xpAcad=(DB.academia?.rutas||[]).flatMap(r=>r.lecciones).filter(l=>l.hecha).reduce((a,l)=>a+(l.puntos||0),0);
-  const xp=O.cargos.reduce((a,c)=>a+(c.puntos||0),0)+O.misiones.filter(m=>m.estado==='completada').reduce((a,m)=>a+(m.puntos||0),0)+xpAcad;
+  const xp=O.cargos.reduce((a,c)=>a+(c.puntos||0),0)+O.misiones.filter(m=>m.estado==='completada').reduce((a,m)=>a+(m.puntos||0),0)+xpAcad+(DB.indice?.evals||[]).length*100;
   const nivel=Math.floor(xp/500)+1;const enNivel=xp%500;const pct=Math.round(enNivel/5);
   const rangos=['Aprendiz','Operador','Estratega','Comandante','Maestro','Leyenda'];
   const rango=rangos[Math.min(nivel-1,rangos.length-1)];
@@ -1018,6 +1021,84 @@ function renderPlayer(){
   <div class="xpwrap"><div class="xpbar"><i style="width:${pct}%"></i></div><div class="mini" style="margin-top:3px">${NUM.format(enNivel)} / 500 XP → Nivel ${nivel+1}</div></div>
   <div class="pstat"><b>${NUM.format(xp)}</b><span class="mini">XP total</span></div>
   <div class="pstat"><b>${pend}</b><span class="mini">misiones</span></div>`;
+}
+
+/* ---------- ÍNDICE LEAN (diagnóstico 0-100) ---------- */
+const DIMS=[
+ {id:'flujo',nombre:'Flujo y valor',ico:'≋',accion:'Mapear el flujo (VSM) y eliminar esperas y re-trabajo',mod:'organizacion',p:['Cada proceso clave tiene definido qué agrega valor al cliente','El trabajo fluye sin esperas largas entre áreas','Se mide el tiempo desde el pedido hasta la entrega','Se elimina el re-tecleo y la doble digitación']},
+ {id:'estandar',nombre:'Estandarización',ico:'▤',accion:'Documentar procedimientos clave en la Base de conocimiento',mod:'wiki',p:['Las tareas críticas tienen un procedimiento escrito','Dos personas distintas hacen la tarea igual','Los procedimientos están a mano y se mantienen al día','Un nuevo empleado se capacita con material estándar']},
+ {id:'calidad',nombre:'Calidad en la fuente',ico:'✔',accion:'Instalar chequeos en el origen y registrar defectos',mod:'inventario',p:['Los errores se detectan donde ocurren, no al final','Se registran los defectos y reclamos','Se busca la causa raíz, no solo el parche','Los quiebres de stock y errores de despacho son raros']},
+ {id:'visual',nombre:'Gestión visual',ico:'◉',accion:'Armar un tablero con máx. 5 indicadores por nivel',mod:'panel',p:['Cualquiera ve de un vistazo si el día va bien o mal','Hay indicadores claros por área (máx. 5)','Las desviaciones se alertan solas','Hay orden y limpieza (5S) en el puesto de trabajo']},
+ {id:'kaizen',nombre:'Mejora continua',ico:'↻',accion:'Activar Kaizen semanal con metas y misiones',mod:'organizacion',p:['Cada persona propone mejoras con regularidad','Las mejoras se implementan y se miden en plata o tiempo','Hay reuniones cortas y periódicas de mejora','Equivocarse y reportar problemas es seguro, no castigado']},
+ {id:'liderazgo',nombre:'Liderazgo y gemba',ico:'⚑',accion:'Rutina de gerencia en terreno y objetivos por cargo',mod:'organizacion',p:['Los jefes van al lugar donde se hace el trabajo','Cada cargo tiene objetivos claros y medibles','Se decide con datos y no solo con intuición','Los líderes enseñan y desarrollan a su equipo']},
+ {id:'digital',nombre:'Digitalización e IA',ico:'⚙',accion:'Automatizar lo repetitivo con agentes de IA',mod:'mensajes',p:['La información está en un solo sistema, no en mil planillas','Cotizar, cobrar y reponer stock se hace sin trabajo manual','Hay agentes de IA o automatizaciones haciendo tareas repetitivas','Los reportes se generan solos']},
+ {id:'neuro',nombre:'Compatibilidad Neuro',ico:'✦',accion:'Bajar carga cognitiva y hacer visible el progreso (RPG)',mod:'academia',p:['La gente ve su progreso y se siente avanzando','Los tableros no saturan (pocos indicadores, claros)','Hay seguridad psicológica: se puede decir "no sé" o "me equivoqué"','Hay tiempo protegido para pensar, aprender e innovar']},
+];
+const ESCALA=['Nunca','Rara vez','A veces','Casi siempre','Siempre'];
+function idxDim(ev,d){const a=ev.resp[d.id]||[];return Math.round(a.reduce((s,x)=>s+(+x||0),0)/(d.p.length*4)*100);}
+function idxTotal(ev){return Math.round(DIMS.reduce((s,d)=>s+idxDim(ev,d),0)/DIMS.length);}
+function idxNivel(n){return n<30?['Reactiva','bad']:n<50?['Emergente','warn']:n<70?['Estructurada','warn']:n<85?['Avanzada','ok']:['Referente','ok'];}
+let idxMode='lista',idxSel=null,idxDraft=null;
+function vIndice(){
+  const E=DB.indice.evals;
+  if(idxMode==='form')return drawIdxForm();
+  if(idxMode==='informe'&&E.find(x=>x.id===idxSel))return drawIdxInforme();
+  idxMode='lista';
+  ACT.innerHTML=`<button class="btn" onclick="nuevaIdx()">+ Nueva auditoría</button>`;
+  V.innerHTML=`<div class="card" style="padding:18px;margin-bottom:16px"><b>El Índice Lean™ le pone nota de 0 a 100 a tu empresa</b>
+  <div class="mini" style="margin-top:6px;line-height:1.6">8 dimensiones · 32 preguntas · ~10 minutos. Muestra dónde se pierde plata y qué módulo de Córtex cierra cada brecha. Repite la auditoría en unos meses para <b>probar cuánto subió la nota</b>.</div></div>
+  ${E.length?`<div class="card"><table><thead><tr><th>Fecha</th><th>Empresa evaluada</th><th class="num">Nota</th><th>Nivel</th><th></th></tr></thead><tbody>
+  ${E.slice().reverse().map(e=>{const n=idxTotal(e),[lv,cl]=idxNivel(n);return`<tr><td>${fmtFecha(e.fecha)}</td><td>${esc(e.empresa)}${e.demo?' <span class="pill mut">ejemplo</span>':''}</td><td class="num"><b>${n}</b>/100</td><td><span class="pill ${cl}">${lv}</span></td><td class="num"><button class="btn sm ghost" onclick="verIdx('${e.id}')">Ver informe</button> <button class="btn sm ghost" onclick="delIdx('${e.id}')">🗑</button></td></tr>`;}).join('')}</tbody></table></div>`
+  :`<div class="empty">Aún no hay auditorías.<br><br><button class="btn" onclick="nuevaIdx()">Hacer la primera</button> <button class="btn ghost" onclick="cargarDemoIdx()">Ver ejemplo (antes y después)</button></div>`}`;
+}
+function nuevaIdx(){idxDraft={empresa:DB.empresa.nombre||'',resp:{}};idxMode='form';render();}
+function drawIdxForm(){
+  ACT.innerHTML=`<button class="btn ghost" onclick="idxMode='lista';render()">Cancelar</button>`;
+  V.innerHTML=`<div class="field" style="max-width:420px"><label>Empresa evaluada</label><input id="ix_emp" value="${esc(idxDraft.empresa)}"></div>
+  <div class="mini" style="margin-bottom:14px">Responde con honestidad: ${ESCALA.map((s,i)=>i+' = '+s).join(' · ')}</div>
+  ${DIMS.map(d=>`<div class="card" style="padding:16px;margin-bottom:14px"><b>${d.ico} ${d.nombre}</b>
+  ${d.p.map((q,i)=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div style="margin-bottom:6px">${esc(q)}</div><div class="row">${ESCALA.map((s,v)=>`<label style="display:flex;gap:4px;align-items:center;margin:0;cursor:pointer;color:var(--ink)"><input type="radio" name="q_${d.id}_${i}" value="${v}" style="width:auto"> ${v}</label>`).join('')}</div></div>`).join('')}</div>`).join('')}
+  <div class="row"><span class="spacer"></span><button class="btn" onclick="saveIdx()">Calcular nota</button></div>`;
+}
+function saveIdx(){
+  const resp={};let falta=0;
+  DIMS.forEach(d=>{resp[d.id]=d.p.map((_,i)=>{const r=document.querySelector(`input[name="q_${d.id}_${i}"]:checked`);if(!r)falta++;return r?+r.value:0;});});
+  if(falta&&!confirm(`Faltan ${falta} preguntas (cuentan como 0). ¿Calcular igual?`))return;
+  const ev={id:uid(),fecha:hoy(),empresa:val('ix_emp')||'Mi empresa',resp};
+  DB.indice.evals.push(ev);save();idxSel=ev.id;idxMode='informe';render();
+}
+function verIdx(id){idxSel=id;idxMode='informe';render();}
+function delIdx(id){if(confirm('¿Eliminar auditoría?')){DB.indice.evals=DB.indice.evals.filter(e=>e.id!==id);save();idxMode='lista';render();}}
+function radarSVG(ev,prev){
+  const S=340,c=S/2,R=120,n=DIMS.length;
+  const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[c+Math.cos(a)*R*v/100,c+Math.sin(a)*R*v/100];};
+  const poly=e=>DIMS.map((d,i)=>pt(i,idxDim(e,d)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const rings=[25,50,75,100].map(v=>`<polygon points="${DIMS.map((_,i)=>pt(i,v).join(',')).join(' ')}" fill="none" stroke="#262c3a"/>`).join('');
+  const labels=DIMS.map((d,i)=>{const[x,y]=pt(i,118);const a=x<c-5?'end':x>c+5?'start':'middle';return`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#96a0b5" font-size="10" text-anchor="${a}">${d.nombre}</text>`;}).join('');
+  return`<svg viewBox="-90 -10 ${S+180} ${S+20}" style="width:100%;max-width:440px">${rings}${labels}
+  ${prev?`<polygon points="${poly(prev)}" fill="none" stroke="#96a0b5" stroke-dasharray="4 3"/>`:''}
+  <polygon points="${poly(ev)}" fill="rgba(124,92,255,.3)" stroke="#7c5cff" stroke-width="2"/></svg>`;
+}
+function drawIdxInforme(){
+  const E=DB.indice.evals,ev=E.find(x=>x.id===idxSel),i=E.indexOf(ev);
+  const prev=E.slice(0,i).reverse().find(x=>x.empresa===ev.empresa);
+  const n=idxTotal(ev),[lv,cl]=idxNivel(n),dn=prev?n-idxTotal(prev):null;
+  const rank=DIMS.map(d=>({d,s:idxDim(ev,d),p:prev?idxDim(prev,d):null})).sort((a,b)=>a.s-b.s);
+  ACT.innerHTML=`<button class="btn ghost" onclick="idxMode='lista';render()">← Volver</button> <button class="btn" onclick="window.print()">Imprimir / PDF</button>`;
+  V.innerHTML=`<div class="kpis">${kpi('Nota Índice Lean',n+'/100',fmtFecha(ev.fecha))}${kpi('Nivel',`<span class="pill ${cl}">${lv}</span>`,'')}
+  ${dn!==null?kpi('Vs. auditoría anterior',(dn>0?'+':'')+dn+' pts',dn>0?'¡la nota subió!':dn<0?'bajó':'sin cambio'):kpi('Auditoría anterior','—','primera medición')}</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+  <div class="card" style="padding:16px;text-align:center"><b>${esc(ev.empresa)}</b>${radarSVG(ev,prev)}${prev?'<div class="mini">Línea punteada = auditoría anterior</div>':''}</div>
+  <div class="card" style="padding:16px"><b>Brechas, de la más grande a la menor</b>
+  ${rank.map(r=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="justify-content:space-between"><span>${r.d.ico} ${r.d.nombre}</span><span class="pill ${r.s<40?'bad':r.s<70?'warn':'ok'}">${r.s}${r.p!==null?` (${r.s-r.p>=0?'+':''}${r.s-r.p})`:''}</span></div>
+  <div class="xpbar" style="margin:6px 0;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden"><i style="display:block;height:100%;width:${r.s}%;background:linear-gradient(90deg,var(--acc),var(--acc2))"></i></div>
+  ${r.s<70?`<div class="mini">→ ${r.d.accion} · <a href="#" onclick="go('${r.d.mod}');return false" style="color:var(--acc2)">abrir módulo</a></div>`:''}</div>`).join('')}</div></div>`;
+}
+function cargarDemoIdx(){
+  const mk=(f)=>{const r={};DIMS.forEach((d,j)=>{r[d.id]=d.p.map((_,i)=>Math.max(0,Math.min(4,f(j,i))));});return r;};
+  DB.indice.evals.push({id:uid(),fecha:diasAtras(120),empresa:'Empresa demo',demo:true,resp:mk((j,i)=>(j+i)%3===0?2:1)});
+  DB.indice.evals.push({id:uid(),fecha:hoy(),empresa:'Empresa demo',demo:true,resp:mk((j,i)=>(j+i)%3===0?4:3)});
+  save();idxMode='lista';render();
 }
 
 /* ---------- MI EMPRESA ---------- */
