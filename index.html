@@ -135,6 +135,7 @@
       <button data-v="panel" class="on"><span class="ico">▤</span><span class="t">Panel</span></button>
       <button data-v="organizacion"><span class="ico">⬢</span><span class="t">Organización · IA</span></button>
       <button data-v="academia"><span class="ico">⬟</span><span class="t">Academia</span></button>
+      <button data-v="prospeccion"><span class="ico">➚</span><span class="t">Prospección</span></button>
       <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
       <button data-v="cotizaciones"><span class="ico">◈</span><span class="t">Cotizaciones</span></button>
       <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
@@ -165,7 +166,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki','prospectos'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -289,11 +290,70 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
+const META={prospeccion:['Prospección','Pipeline de ventas · llamadas pendientes · plantillas'],panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
+  ({prospeccion:vProsp,panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
   renderPlayer();
+}
+
+
+/* ---------- PROSPECCIÓN ---------- */
+const ETAPAS=[['nuevo','Nuevo'],['contactado','Contactado'],['reunion','Reunión'],['propuesta','Propuesta'],['ganado','Ganado'],['perdido','Perdido']];
+const OFERTAS=[['Índice Lean Express',390000],['Índice Lean Completo',890000],['Plataforma (mensual)',0],['Acompañamiento Kata (mensual)',0],['Re-auditoría',490000]];
+const PLANTILLAS={
+ correo:{t:'Correo de apertura',x:'Asunto: ¿Cuánta plata pierde {empresa} en desperdicio?\n\nHola {contacto},\n\nSegún Gallup, la desconexión laboral cuesta cerca del 9% del PIB mundial: la gente está quemada y apagando incendios en vez de mejorar.\n\nEn NeuroLean medimos eso en su empresa con una nota de 0 a 100 (El Índice Lean) en medio día, y le mostramos dónde se va la plata.\n\n¿Tiene 20 minutos esta semana?\n\nSaludos,\nMario Charlín · NeuroLean · +56 9 7877 3332'},
+ wsp:{t:'WhatsApp corto',x:'Hola {contacto}, soy Mario de NeuroLean. Ayudamos a empresas como {empresa} a bajar costos rediseñando cómo trabaja la gente, con IA para lo repetitivo. Mido su empresa con una nota 0-100 en medio día. ¿Le muestro cómo en 20 min?'},
+ llamada:{t:'Guion de llamada (20 min)',x:'1) DOLOR (5 min): "¿Cuánto tiempo pierde su gente apagando incendios?" Cite: 23% comprometido, 41% estrés diario (Gallup 2024).\n2) DIAGNÓSTICO (5 min): Índice Lean, nota 0-100 en 8 dimensiones.\n3) SISTEMA (5 min): plataforma que sostiene el hábito (suscripción).\n4) ROI (3 min): por cada US$1 en salud mental laboral se recuperan US$4 (OMS). Re-auditoría prueba la mejora.\n5) CIERRE (2 min): propone el Índice Lean Express $390.000. No confirmes fechas de implementación sin aprobación.'},
+ seguim:{t:'Seguimiento sin respuesta',x:'Hola {contacto}, le escribí hace unos días por el Índice Lean para {empresa}. Si prefiere, se lo hago sin costo de coordinación: solo medio día en terreno. ¿Le acomoda esta semana o la próxima?'}
+};
+let fProsp='todos';
+function pAbierto(p){return p.etapa!=='ganado'&&p.etapa!=='perdido';}
+function vProsp(){
+  ACT.innerHTML=`<button class="btn" onclick="editProsp()">+ Prospecto</button>`;
+  const L=DB.prospectos, ab=L.filter(pAbierto);
+  const venc=ab.filter(p=>p.prox&&p.prox<=hoy());
+  const pipe=ab.reduce((a,p)=>a+(+p.monto||0),0), gan=L.filter(p=>p.etapa==='ganado').reduce((a,p)=>a+(+p.monto||0),0);
+  const lista=(fProsp==='todos'?L:L.filter(p=>p.etapa===fProsp)).slice().sort((a,b)=>(a.prox||'9999').localeCompare(b.prox||'9999'));
+  V.innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="lbl">Abiertos</div><div class="val">${ab.length}</div></div>
+    <div class="kpi"><div class="lbl">Acciones vencidas / hoy</div><div class="val" style="color:${venc.length?'var(--bad)':'inherit'}">${venc.length}</div></div>
+    <div class="kpi"><div class="lbl">Pipeline abierto</div><div class="val">${CLP.format(pipe)}</div></div>
+    <div class="kpi"><div class="lbl">Ganado</div><div class="val">${CLP.format(gan)}</div></div></div>
+  <div class="row" style="gap:6px;margin-bottom:12px;flex-wrap:wrap">${[['todos','Todos']].concat(ETAPAS).map(e=>`<button class="btn sm ${fProsp===e[0]?'':'ghost'}" onclick="fProsp='${e[0]}';vProsp()">${e[1]}</button>`).join('')}</div>
+  <div class="card"><table><thead><tr><th>Empresa</th><th>Etapa</th><th>Oferta</th><th>Próxima acción</th><th></th></tr></thead><tbody>
+  ${lista.map(p=>{const v=pAbierto(p)&&p.prox&&p.prox<=hoy();return`<tr>
+    <td><b>${esc(p.empresa)}</b><div class="mini">${esc(p.contacto||'')} ${p.fono?`· <a href="tel:${esc(p.fono)}">${esc(p.fono)}</a> <a href="https://wa.me/${p.fono.replace(/\D/g,'')}" target="_blank">💬</a>`:''}</div></td>
+    <td><span class="pill ${p.etapa==='ganado'?'ok':p.etapa==='perdido'?'bad':'warn'}">${p.etapa}</span></td>
+    <td>${esc(p.oferta||'—')}<div class="mini">${p.monto?CLP.format(p.monto):''}</div></td>
+    <td ${v?'style="color:var(--bad);font-weight:700"':''}>${p.prox?fmtFecha(p.prox):'—'}<div class="mini">${esc(p.accion||'')}</div></td>
+    <td class="row"><button class="btn sm ghost" onclick="plantilla('${p.id}')">Texto</button><button class="btn sm ghost" onclick="editProsp('${p.id}')">Editar</button><button class="btn sm ghost" onclick="delProsp('${p.id}')">🗑</button></td></tr>`;}).join('')||'<tr><td colspan="5" class="empty">Sin prospectos. Agrega el primero (empieza por tus 20 empresas objetivo).</td></tr>'}
+  </tbody></table></div>`;
+}
+function editProsp(id){
+  const p=id?DB.prospectos.find(x=>x.id===id):{id:'',empresa:'',contacto:'',fono:'',mail:'',etapa:'nuevo',oferta:OFERTAS[0][0],monto:OFERTAS[0][1],prox:hoy(),accion:'Llamar',nota:''};
+  openModal(`<h3>${id?'Editar':'Nuevo'} prospecto</h3>
+  <div class="field"><label>Empresa</label><input id="p_emp" value="${esc(p.empresa)}"></div>
+  <div class="grid2"><div class="field"><label>Contacto</label><input id="p_con" value="${esc(p.contacto)}"></div><div class="field"><label>Teléfono</label><input id="p_fon" value="${esc(p.fono)}"></div></div>
+  <div class="grid2"><div class="field"><label>Email</label><input id="p_mail" value="${esc(p.mail)}"></div>
+  <div class="field"><label>Etapa</label><select id="p_et">${ETAPAS.map(e=>`<option value="${e[0]}" ${p.etapa===e[0]?'selected':''}>${e[1]}</option>`).join('')}</select></div></div>
+  <div class="grid2"><div class="field"><label>Oferta</label><select id="p_of">${OFERTAS.map(o=>`<option ${p.oferta===o[0]?'selected':''}>${o[0]}</option>`).join('')}</select></div>
+  <div class="field"><label>Monto (CLP)</label><input id="p_mon" type="number" value="${p.monto||0}"></div></div>
+  <div class="grid2"><div class="field"><label>Próxima acción (fecha)</label><input id="p_prox" type="date" value="${p.prox||''}"></div><div class="field"><label>Qué hacer</label><input id="p_acc" value="${esc(p.accion)}"></div></div>
+  <div class="field"><label>Nota</label><textarea id="p_nota" rows="2">${esc(p.nota)}</textarea></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveProsp('${p.id}')">Guardar</button></div>`);
+}
+function saveProsp(id){
+  const e=val('p_emp');if(!e){alert('Falta la empresa');return;}
+  const d={empresa:e,contacto:val('p_con'),fono:val('p_fon'),mail:val('p_mail'),etapa:val('p_et'),oferta:val('p_of'),monto:+val('p_mon')||0,prox:val('p_prox'),accion:val('p_acc'),nota:val('p_nota')};
+  if(id)Object.assign(DB.prospectos.find(x=>x.id===id),d);else DB.prospectos.push(Object.assign({id:uid()},d));
+  save();closeModal();vProsp();
+}
+function delProsp(id){if(confirm('¿Eliminar prospecto?')){DB.prospectos=DB.prospectos.filter(x=>x.id!==id);save();vProsp();}}
+function plantilla(id){
+  const p=DB.prospectos.find(x=>x.id===id);
+  const fill=t=>t.replace(/\{empresa\}/g,p.empresa).replace(/\{contacto\}/g,p.contacto||'');
+  openModal(`<h3>Textos para ${esc(p.empresa)}</h3>`+Object.keys(PLANTILLAS).map(k=>`<div class="field"><label>${PLANTILLAS[k].t}</label><textarea id="pl_${k}" rows="5">${esc(fill(PLANTILLAS[k].x))}</textarea><button class="btn sm ghost" onclick="navigator.clipboard.writeText(document.getElementById('pl_${k}').value);this.textContent='Copiado ✓'">Copiar</button></div>`).join('')+`<div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cerrar</button></div>`);
 }
 
 /* ---------- PANEL ---------- */
