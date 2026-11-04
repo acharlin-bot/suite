@@ -37,6 +37,7 @@
   .btn:hover{filter:brightness(1.08)}
   .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
   .btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+  a.btn{text-decoration:none;display:inline-flex;align-items:center}
   .btn.ok{background:var(--ok)} .btn.bad{background:var(--bad)} .btn.warn{background:var(--warn);color:#111}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .spacer{flex:1}
@@ -136,6 +137,7 @@
       <button data-v="organizacion"><span class="ico">⬢</span><span class="t">Organización · IA</span></button>
       <button data-v="academia"><span class="ico">⬟</span><span class="t">Academia</span></button>
       <button data-v="clientes"><span class="ico">◕</span><span class="t">Clientes</span></button>
+      <button data-v="tratos"><span class="ico">☎</span><span class="t">Tratos</span></button>
       <button data-v="cotizaciones"><span class="ico">◈</span><span class="t">Cotizaciones</span></button>
       <button data-v="inventario"><span class="ico">▦</span><span class="t">Inventario</span></button>
       <button data-v="ventas"><span class="ico">◎</span><span class="t">Ventas / Caja</span></button>
@@ -165,7 +167,7 @@
 /* ---------- almacén ---------- */
 const KEY='numen_suite_v1';
 const DB=load();
-['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
+['clientes','productos','cotizaciones','cobros','ventas','docs','hojas','mensajes','wiki','tratos'].forEach(k=>{if(!Array.isArray(DB[k]))DB[k]=[];});
 if(!DB.empresa)DB.empresa={};
 if(!DB.org)DB.org={cargos:[],mejoras:[],misiones:[]};
 ['cargos','mejoras','misiones'].forEach(k=>{if(!Array.isArray(DB.org[k]))DB.org[k]=[];});
@@ -179,6 +181,10 @@ function seed(){
   const o1=uid(),o2=uid(),o3=uid(),o4=uid();
   return {v:1,
     empresa:{nombre:'Mi Empresa SpA',rut:'',giro:'',dir:'',fono:'',mail:'',logo:''},
+    tratos:[
+      {id:uid(),empresa:'Metalúrgica Ejemplo',contacto:'Ana Rojas',fono:'56911112222',mail:'',origen:'Respondió correo',etapa:'respondio',monto:390000,proximo:diasAtras(2),accion:'Llamar y agendar reunión de 20 min',ultimo:diasAtras(4),toques:0,notas:[{f:diasAtras(4),t:'Respondió: "llámeme y conversamos"'}]},
+      {id:uid(),empresa:'Alimentos Ejemplo',contacto:'Luis Mena',fono:'56933334444',mail:'',origen:'Referido',etapa:'reunion',monto:890000,proximo:hoy(),accion:'Reunión: dolor → diagnóstico → cerrar Express',ultimo:diasAtras(1),toques:2,notas:[]},
+    ],
     clientes:[
       {id:c1,nombre:'Ferretería El Clavo',contacto:'Juan Pérez',fono:'56999111222',mail:'jperez@elclavo.cl',estado:'activo',nota:''},
       {id:c2,nombre:'Constructora Andes',contacto:'María Soto',fono:'56988333444',mail:'msoto@andes.cl',estado:'activo',nota:'Paga a 30 días'},
@@ -289,10 +295,10 @@ const V=document.getElementById('view');
 const TTL=document.getElementById('ttl'),SUB=document.getElementById('sub'),ACT=document.getElementById('topActions');
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;go(b.dataset.v);});
 function go(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();}
-const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
+const META={panel:['Panel','Resumen de tu empresa'],organizacion:['Organización · IA','Tu organigrama con agentes de IA · lean · mejora continua'],academia:['Academia','Learning organization · capacitación gamificada'],clientes:['Clientes','Tu cartera y contactos'],tratos:['Tratos','Quién respondió, qué falta y a quién llamar hoy'],cotizaciones:['Cotizaciones','Presupuestos y ventas'],inventario:['Inventario','Stock y alertas de quiebre'],ventas:['Ventas / Caja','Registra ventas y cuadra tu caja'],cobranzas:['Cobranzas','Lo que te deben'],documentos:['Documentos','Tu procesador de textos integrado'],hojas:['Hojas de cálculo','Planillas con fórmulas, como Excel'],mensajes:['Mensajes','Chat interno del equipo · tus agentes reportan aquí'],wiki:['Base de conocimiento','Cómo se hacen las cosas aquí · procedimientos y guías'],config:['Mi empresa','Datos para tus documentos']};
 function render(){
   const[t,s]=META[VIEW];TTL.textContent=t;SUB.textContent=s;ACT.innerHTML='';
-  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
+  ({panel:vPanel,organizacion:vOrg,academia:vAcademia,clientes:vClientes,tratos:vTratos,cotizaciones:vCotiz,inventario:vInv,ventas:vVentas,cobranzas:vCobros,documentos:vDocs,hojas:vHojas,mensajes:vMensajes,wiki:vWiki,config:vConfig}[VIEW])();
   renderPlayer();
 }
 
@@ -329,6 +335,7 @@ function vPanel(){
 function tareas(){
   const t=[];
   DB.cobros.filter(c=>c.estado==='pendiente'&&diasVencido(c.vence)>0).sort((a,b)=>diasVencido(b.vence)-diasVencido(a.vence)).forEach(c=>t.push({icon:'⏰',txt:'Cobrar a '+(cliente(c.clienteId)?.nombre||'cliente'),det:diasVencido(c.vence)+' días vencido · '+esc(c.concepto),monto:c.monto,goto:'cobranzas'}));
+  tratosAbiertos().filter(d=>d.proximo<=hoy()).sort((a,b)=>a.proximo.localeCompare(b.proximo)).forEach(d=>t.push({icon:'☎',txt:'Contactar '+esc(d.empresa),det:(diasVencido(d.proximo)>0?diasVencido(d.proximo)+' días atrasado · ':'hoy · ')+esc(d.accion||''),monto:d.monto,goto:'tratos'}));
   DB.productos.filter(p=>p.stock<=0).forEach(p=>t.push({icon:'🚫',txt:'Reponer '+esc(p.nombre),det:'sin stock',monto:0,goto:'inventario'}));
   DB.productos.filter(p=>p.stock>0&&p.stock<=p.min).forEach(p=>t.push({icon:'⚠️',txt:'Stock bajo: '+esc(p.nombre),det:p.stock+' unidades (mín '+p.min+')',monto:0,goto:'inventario'}));
   DB.cotizaciones.filter(q=>q.estado==='enviada').forEach(q=>t.push({icon:'📤',txt:'Seguir cotización #'+q.num,det:'a '+(cliente(q.clienteId)?.nombre||'cliente')+' · enviada',monto:totalCotiz(q),goto:'cotizaciones'}));
@@ -635,6 +642,112 @@ function exportCobros(){
   const rows=[['Cliente','Concepto','Vence','Monto','Estado','DiasAtraso']];
   DB.cobros.forEach(c=>rows.push([cliente(c.clienteId)?.nombre||'',c.concepto,c.vence,c.monto,c.estado,Math.max(0,diasVencido(c.vence))]));
   descargaCSV('cobranzas.csv',rows);
+}
+
+/* ---------- TRATOS (seguimiento comercial: nadie que respondió se queda sin llamada) ---------- */
+const ETAPAS=[['respondio','Respondió'],['reunion','Reunión'],['propuesta','Propuesta'],['ganado','Ganado'],['perdido','Perdido']];
+const GUION={
+  respondio:{t:'Responder en menos de 24 h. Objetivo: agendar 20 minutos, no vender por teléfono.',
+    m:d=>`Hola ${d.contacto||''}, soy ${DB.empresa.contacto||'[tu nombre]'} de ${DB.empresa.nombre||'[tu empresa]'}. Vi tu respuesta y quiero cumplirte: ¿te acomoda una llamada de 20 minutos mañana o pasado? Te muestro en concreto cómo medimos dónde se pierde tiempo y plata en ${d.empresa}.`},
+  reunion:{t:'Guion de 20 min: 1) Dolor con números (5 min, pregunta y escucha) · 2) Diagnóstico: qué mide y qué entrega (5) · 3) Cómo se cierra la brecha (5) · 4) Proponer el primer paso concreto con fecha (5).',
+    m:d=>`Hola ${d.contacto||''}, confirmo nuestra conversación. Para aprovecharla: ¿cuál es hoy el problema que más te cuesta en ${d.empresa}? Con eso llego preparado.`},
+  propuesta:{t:'Seguimiento a los 2 días. Pregunta por la decisión, no por si "la vio". Ofrece resolver la objeción en una llamada.',
+    m:d=>`Hola ${d.contacto||''}, ¿pudiste revisar la propuesta para ${d.empresa}? Si hay algo que ajustar (alcance, fecha o forma de pago) lo vemos en 10 minutos. ¿Te llamo hoy o mañana?`},
+  ganado:{t:'Agradecer, fijar fecha de inicio y pedir un referido cuando entregues el primer resultado.',
+    m:d=>`¡Gracias ${d.contacto||''}! Partimos el [fecha]. Te envío lo que necesitamos de tu lado para empezar.`},
+  perdido:{t:'Preguntar el motivo (sirve para mejorar la oferta) y dejar la puerta abierta en 90 días.',
+    m:d=>`Hola ${d.contacto||''}, gracias por tu tiempo. Para mejorar, ¿qué fue lo que no calzó? Te vuelvo a escribir en unos meses por si cambia el escenario.`}
+};
+let fTrato='abiertos';
+function tratosAbiertos(){return(DB.tratos||[]).filter(d=>d.etapa!=='ganado'&&d.etapa!=='perdido');}
+function etapaNom(e){return(ETAPAS.find(x=>x[0]===e)||['',e])[1];}
+function vTratos(){
+  ACT.innerHTML=`<select onchange="fTrato=this.value;vTratos()" style="width:auto">
+    <option value="abiertos" ${fTrato==='abiertos'?'selected':''}>Abiertos</option>
+    <option value="hoy" ${fTrato==='hoy'?'selected':''}>Para hoy / atrasados</option>
+    <option value="todos" ${fTrato==='todos'?'selected':''}>Todos</option></select>
+    <button class="btn ghost" onclick="exportTratos()">Exportar CSV</button><button class="btn" onclick="editTrato()">+ Trato</button>`;
+  const ab=tratosAbiertos();
+  const atras=ab.filter(d=>d.proximo<hoy());
+  const sinLlamar=ab.filter(d=>d.etapa==='respondio'&&!d.toques);
+  const enJuego=ab.reduce((a,d)=>a+(+d.monto||0),0);
+  const ganado=DB.tratos.filter(d=>d.etapa==='ganado').reduce((a,d)=>a+(+d.monto||0),0);
+  let list=fTrato==='todos'?DB.tratos.slice():(fTrato==='hoy'?ab.filter(d=>d.proximo<=hoy()):ab);
+  list.sort((a,b)=>(a.proximo||'9').localeCompare(b.proximo||'9'));
+  V.innerHTML=`<div class="kpis">
+    ${kpi('Para hoy',ab.filter(d=>d.proximo<=hoy()).length,atras.length?'<span style="color:#f87171">'+atras.length+' atrasados</span>':'al día')}
+    ${kpi('Respondieron y nadie llamó',sinLlamar.length,sinLlamar.length?'<span style="color:#f87171">la plata más cercana</span>':'bien')}
+    ${kpi('En juego',clp(enJuego),ab.length+' tratos abiertos')}
+    ${kpi('Ganado',clp(ganado),DB.tratos.filter(d=>d.etapa==='ganado').length+' cierres')}
+  </div>
+  <div class="card"><div class="mini" style="padding:12px 14px">Regla: quien responde se contacta en menos de 24 horas. Cada contacto registrado suma 10 XP; cada cierre, 200.</div>
+  <table><thead><tr><th>Empresa</th><th>Etapa</th><th>Próximo paso</th><th>Cuándo</th><th class="num">Monto</th><th></th></tr></thead><tbody>
+  ${list.map(d=>{const dv=d.proximo?diasVencido(d.proximo):0;const abierto=d.etapa!=='ganado'&&d.etapa!=='perdido';
+    const tel=(d.fono||'').replace(/\D/g,'');
+    return`<tr style="${abierto&&dv>0?'background:rgba(239,68,68,.06)':''}">
+    <td><b>${esc(d.empresa)}</b><div class="mini">${esc(d.contacto||'')}${d.fono?' · '+esc(d.fono):''}${d.origen?' · '+esc(d.origen):''}</div></td>
+    <td><span class="pill ${d.etapa==='ganado'?'ok':d.etapa==='perdido'?'mut':'warn'}">${etapaNom(d.etapa)}</span></td>
+    <td>${esc(d.accion||'')}</td>
+    <td>${!abierto?'—':(dv>0?'<span class="pill bad">hace '+dv+' d</span>':dv===0?'<span class="pill warn">hoy</span>':'<span class="pill mut">'+fmtFecha(d.proximo)+'</span>')}</td>
+    <td class="num">${d.monto?clp(+d.monto):''}</td>
+    <td class="row">
+      ${tel?`<a class="btn sm ok" href="tel:+${tel}" onclick="toque('${d.id}','Llamada')">Llamar</a><a class="btn sm warn" target="_blank" href="https://wa.me/${tel}?text=${encodeURIComponent(GUION[d.etapa].m(d))}" onclick="toque('${d.id}','WhatsApp')">💬</a>`:''}
+      ${d.mail?`<a class="btn sm ghost" href="mailto:${esc(d.mail)}?body=${encodeURIComponent(GUION[d.etapa].m(d))}" onclick="toque('${d.id}','Correo')">✉</a>`:''}
+      <button class="btn sm ghost" onclick="verTrato('${d.id}')">Abrir</button>
+    </td></tr>`;}).join('')||'<tr><td colspan="6" class="empty">Sin tratos aquí. Agrega a cada persona que te responda.</td></tr>'}
+  </tbody></table></div>`;
+}
+function toque(id,canal){const d=DB.tratos.find(x=>x.id===id);d.toques=(d.toques||0)+1;d.ultimo=hoy();d.notas=d.notas||[];d.notas.unshift({f:hoy(),t:canal+' (registrado al contactar)'});
+  if(d.proximo<=hoy())d.proximo=diasAdelante(2);save();setTimeout(()=>{if(VIEW==='tratos')vTratos();},300);}
+function verTrato(id){
+  const d=DB.tratos.find(x=>x.id===id);const g=GUION[d.etapa];
+  openModal(`<h3>${esc(d.empresa)}</h3>
+  <div class="mini" style="margin-bottom:10px">${esc(d.contacto||'')} ${d.fono?'· '+esc(d.fono):''} ${d.mail?'· '+esc(d.mail):''} · ${d.toques||0} contactos</div>
+  <div class="field"><label>Guion para esta etapa (${etapaNom(d.etapa)})</label><div class="mini" style="line-height:1.5">${esc(g.t)}</div></div>
+  <div class="field"><label>Mensaje sugerido</label><textarea id="t_msg" rows="4">${esc(g.m(d))}</textarea>
+    <button class="btn sm ghost" style="margin-top:6px" onclick="navigator.clipboard.writeText(document.getElementById('t_msg').value);this.textContent='Copiado ✓'">Copiar</button></div>
+  <div class="field"><label>Anotar resultado del contacto</label><input id="t_nota" placeholder="Ej: no contestó / agendamos jueves 10:00 / pidió propuesta"></div>
+  <div class="grid2"><div class="field"><label>Mover a etapa</label><select id="t_eta">${ETAPAS.map(e=>`<option value="${e[0]}" ${e[0]===d.etapa?'selected':''}>${e[1]}</option>`).join('')}</select></div>
+  <div class="field"><label>Próximo contacto</label><input id="t_prox" type="date" value="${d.proximo||diasAdelante(2)}"></div></div>
+  <div class="field"><label>Próximo paso</label><input id="t_acc" value="${esc(d.accion||'')}"></div>
+  <div class="field"><label>Historial</label><div class="mini" style="max-height:120px;overflow:auto;line-height:1.6">${(d.notas||[]).map(n=>fmtFecha(n.f)+' — '+esc(n.t)).join('<br>')||'Sin registros.'}</div></div>
+  <div class="row"><button class="btn sm ghost" onclick="delTrato('${d.id}')">🗑</button><button class="btn sm ghost" onclick="closeModal();editTrato('${d.id}')">✎ Datos</button><span class="spacer"></span>
+  <button class="btn ghost" onclick="closeModal()">Cerrar</button><button class="btn" onclick="registrarTrato('${d.id}')">Guardar</button></div>`);
+}
+function registrarTrato(id){
+  const d=DB.tratos.find(x=>x.id===id);const n=val('t_nota');const e=val('t_eta');
+  d.notas=d.notas||[];
+  if(n){d.notas.unshift({f:hoy(),t:n});d.toques=(d.toques||0)+1;d.ultimo=hoy();}
+  if(e!==d.etapa){d.notas.unshift({f:hoy(),t:'Etapa: '+etapaNom(d.etapa)+' → '+etapaNom(e)});d.etapa=e;}
+  d.proximo=val('t_prox');d.accion=val('t_acc');
+  save();closeModal();vTratos();
+}
+function editTrato(id){
+  const d=id?DB.tratos.find(x=>x.id===id):{id:'',empresa:'',contacto:'',fono:'',mail:'',origen:'Respondió correo',etapa:'respondio',monto:0,proximo:hoy(),accion:'Llamar y agendar reunión de 20 min'};
+  openModal(`<h3>${id?'Editar':'Nuevo'} trato</h3>
+  <div class="grid2"><div class="field"><label>Empresa</label><input id="d_emp" value="${esc(d.empresa)}"></div>
+  <div class="field"><label>Contacto</label><input id="d_con" value="${esc(d.contacto)}"></div></div>
+  <div class="grid2"><div class="field"><label>Teléfono (con 56)</label><input id="d_fon" value="${esc(d.fono)}" placeholder="56912345678"></div>
+  <div class="field"><label>Correo</label><input id="d_mail" value="${esc(d.mail)}"></div></div>
+  <div class="grid2"><div class="field"><label>Origen</label><input id="d_ori" value="${esc(d.origen)}" placeholder="Respondió correo / referido / licitación"></div>
+  <div class="field"><label>Monto estimado (CLP)</label><input id="d_mon" type="number" value="${d.monto||0}"></div></div>
+  <div class="grid2"><div class="field"><label>Etapa</label><select id="d_eta">${ETAPAS.map(e=>`<option value="${e[0]}" ${e[0]===d.etapa?'selected':''}>${e[1]}</option>`).join('')}</select></div>
+  <div class="field"><label>Próximo contacto</label><input id="d_pro" type="date" value="${d.proximo}"></div></div>
+  <div class="field"><label>Próximo paso</label><input id="d_acc" value="${esc(d.accion)}"></div>
+  <div class="row"><span class="spacer"></span><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveTrato('${d.id}')">Guardar</button></div>`);
+}
+function saveTrato(id){
+  const o={empresa:val('d_emp'),contacto:val('d_con'),fono:val('d_fon'),mail:val('d_mail'),origen:val('d_ori'),monto:+val('d_mon')||0,etapa:val('d_eta'),proximo:val('d_pro'),accion:val('d_acc')};
+  if(!o.empresa){alert('Escribe la empresa');return;}
+  if(id)Object.assign(DB.tratos.find(x=>x.id===id),o);
+  else DB.tratos.push(Object.assign({id:uid(),toques:0,ultimo:'',notas:[{f:hoy(),t:'Trato creado ('+o.origen+')'}]},o));
+  save();closeModal();vTratos();
+}
+function delTrato(id){if(confirm('¿Eliminar trato?')){DB.tratos=DB.tratos.filter(x=>x.id!==id);save();closeModal();vTratos();}}
+function exportTratos(){
+  const rows=[['Empresa','Contacto','Telefono','Correo','Origen','Etapa','Proximo','Accion','Monto','Contactos']];
+  DB.tratos.forEach(d=>rows.push([d.empresa,d.contacto,d.fono,d.mail,d.origen,etapaNom(d.etapa),d.proximo,d.accion,d.monto,d.toques||0]));
+  descargaCSV('tratos.csv',rows);
 }
 
 /* ---------- ORGANIZACIÓN (IA · lean · gamificación) ---------- */
@@ -1008,7 +1121,7 @@ function renderPlayer(){
   const bar=document.getElementById('playerbar');if(!bar)return;
   const O=DB.org;
   const xpAcad=(DB.academia?.rutas||[]).flatMap(r=>r.lecciones).filter(l=>l.hecha).reduce((a,l)=>a+(l.puntos||0),0);
-  const xp=O.cargos.reduce((a,c)=>a+(c.puntos||0),0)+O.misiones.filter(m=>m.estado==='completada').reduce((a,m)=>a+(m.puntos||0),0)+xpAcad;
+  const xp=O.cargos.reduce((a,c)=>a+(c.puntos||0),0)+O.misiones.filter(m=>m.estado==='completada').reduce((a,m)=>a+(m.puntos||0),0)+xpAcad+(DB.tratos||[]).reduce((a,d)=>a+(d.toques||0)*10+(d.etapa==='ganado'?200:0),0);
   const nivel=Math.floor(xp/500)+1;const enNivel=xp%500;const pct=Math.round(enNivel/5);
   const rangos=['Aprendiz','Operador','Estratega','Comandante','Maestro','Leyenda'];
   const rango=rangos[Math.min(nivel-1,rangos.length-1)];
